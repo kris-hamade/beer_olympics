@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="icon" href="/beer_logo_transparent.png" type="image/png" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="card">
+        <div class="brand-row">
+          <img class="brand-logo" src="/beer_logo_transparent.png" alt="Beer Olympics logo" />
+          <span class="brand-name">Beer Olympics</span>
+        </div>
+        <h1>Registration Complete</h1>
+        <p class="subtitle">You are officially in the Beer Olympics lineup.</p>
+
+        <div class="success-card">
+          <div class="flag">
+            <img
+              class="flag-img flag-img-xl"
+              src="<%= flagUrlFor(team.country_code) %>"
+              alt="<%= team.country_name %> flag"
+            />
+          </div>
+          <div>
+            <h2><%= team.country_name %></h2>
+            <p class="meta"><strong>Player 1:</strong> <%= team.player1_name %></p>
+            <p class="meta"><strong>Player 2:</strong> <%= team.player2_name %></p>
+          </div>
+        </div>
+
+        <div class="link-row">
+          <a href="/register">Register another team</a>
+          <a href="/teams">View all teams</a>
+        </div>
+
+        <footer class="footer">Countries remaining: <strong><%= remainingCount %></strong></footer>
+      </section>
+    </main>
+  </body>
+</html>

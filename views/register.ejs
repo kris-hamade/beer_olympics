@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="icon" href="/beer_logo_transparent.png" type="image/png" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="card">
+        <div class="card-header">
+          <div>
+            <div class="brand-row">
+              <img class="brand-logo" src="/beer_logo_transparent.png" alt="Beer Olympics logo" />
+              <span class="brand-name">Beer Olympics</span>
+            </div>
+            <h1>Beer Olympics Team Registration</h1>
+            <p class="subtitle">Claim your country and lock in your two-person roster.</p>
+          </div>
+          <form method="post" action="/logout">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <button type="submit" class="btn btn-ghost">Log out</button>
+          </form>
+        </div>
+
+        <div class="register-layout">
+          <aside class="side-panel">
+            <h2>Registered Teams</h2>
+            <p class="subtitle">Live roster and country claims.</p>
+            <% if (teams.length === 0) { %>
+              <div class="alert alert-info">No teams yet. Be the first to claim a country.</div>
+            <% } else { %>
+              <div class="team-list">
+                <% teams.forEach(function(team) { %>
+                  <div class="team-item">
+                    <div class="team-flag">
+                      <img
+                        class="flag-img flag-img-md"
+                        src="<%= flagUrlFor(team.country_code) %>"
+                        alt="<%= team.country_name %> flag"
+                        loading="lazy"
+                      />
+                    </div>
+                    <div>
+                      <div class="team-name"><%= team.team_name %></div>
+                      <div class="team-meta">
+                        <span><%= team.player1_name %></span>
+                        <span>·</span>
+                        <span><%= team.player2_name %></span>
+                      </div>
+                      <div class="team-country"><%= team.country_name %></div>
+                    </div>
+                  </div>
+                <% }) %>
+              </div>
+            <% } %>
+          </aside>
+
+          <div class="main-panel">
+            <% if (errors.length > 0) { %>
+              <div class="alert alert-error">
+                <ul>
+                  <% errors.forEach(function(error) { %>
+                    <li><%= error %></li>
+                  <% }) %>
+                </ul>
+              </div>
+            <% } %>
+
+            <% if (countries.length === 0) { %>
+              <div class="alert alert-info">
+                All countries have been claimed. Registration is closed.
+              </div>
+            <% } %>
+
+            <form method="post" action="/register" class="stack" <%= countries.length === 0 ? "aria-disabled=\"true\"" : "" %>>
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+              <div class="grid">
+                <label class="field">
+                  <span>Player 1 name</span>
+                  <input
+                    type="text"
+                    name="player1_name"
+                    value="<%= form.player1_name %>"
+                    required
+                    <%= countries.length === 0 ? "disabled" : "" %>
+                    placeholder="Jordan"
+                  />
+                </label>
+                <label class="field">
+                  <span>Player 2 name</span>
+                  <input
+                    type="text"
+                    name="player2_name"
+                    value="<%= form.player2_name %>"
+                    required
+                    <%= countries.length === 0 ? "disabled" : "" %>
+                    placeholder="Taylor"
+                  />
+                </label>
+              </div>
+              <label class="field">
+                <span>Country (team name)</span>
+                <div class="select-with-flag">
+                  <img
+                    id="selected-flag"
+                    class="flag-img flag-img-lg"
+                    src=""
+                    alt="Selected country flag"
+                    aria-hidden="true"
+                  />
+                  <select name="country_code" required <%= countries.length === 0 ? "disabled" : "" %>>
+                  <option value="" disabled <%= !form.country_code ? "selected" : "" %>>Select a country</option>
+                  <% countries.forEach(function(country) { %>
+                    <option
+                      value="<%= country.code %>"
+                      data-flag-url="<%= flagUrlFor(country.code) %>"
+                      <%= form.country_code === country.code ? "selected" : "" %>
+                    >
+                      <%= country.name %>
+                    </option>
+                  <% }) %>
+                </select>
+                </div>
+              </label>
+              <button type="submit" class="btn" <%= countries.length === 0 ? "disabled" : "" %>>Register team</button>
+            </form>
+
+            <div class="link-row">
+              <a href="/teams">View registered teams</a>
+              <span class="remaining">Countries remaining: <strong><%= remainingCount %></strong></span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+    <script src="/app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="icon" href="/beer_logo_transparent.png" type="image/png" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="card">
+        <div class="brand-row">
+          <img class="brand-logo" src="/beer_logo_transparent.png" alt="Beer Olympics logo" />
+          <span class="brand-name">Beer Olympics</span>
+        </div>
+        <h1>Admin Portal</h1>
+        <p class="subtitle">Enter the admin password to manage teams.</p>
+
+        <% if (flash && flash.type === "error") { %>
+          <div class="alert alert-error"><%= flash.message %></div>
+        <% } %>
+
+        <form method="post" action="/admin/login" class="stack">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+          <label class="field">
+            <span>Admin password</span>
+            <input type="password" name="password" required placeholder="Enter admin password" />
+          </label>
+          <button type="submit" class="btn">Enter admin</button>
+        </form>
+      </section>
+    </main>
+  </body>
+</html>

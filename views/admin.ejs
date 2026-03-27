@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="icon" href="/beer_logo_transparent.png" type="image/png" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="card">
+        <div class="card-header">
+          <div>
+            <div class="brand-row">
+              <img class="brand-logo" src="/beer_logo_transparent.png" alt="Beer Olympics logo" />
+              <span class="brand-name">Beer Olympics</span>
+            </div>
+            <h1>Admin Portal</h1>
+            <p class="subtitle">Update players, swap countries, or remove teams.</p>
+          </div>
+          <form method="post" action="/admin/logout">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <button type="submit" class="btn btn-ghost">Log out</button>
+          </form>
+        </div>
+
+        <% if (flash && flash.type === "error") { %>
+          <div class="alert alert-error"><%= flash.message %></div>
+        <% } %>
+        <% if (flash && flash.type === "success") { %>
+          <div class="alert alert-info"><%= flash.message %></div>
+        <% } %>
+
+        <% if (teams.length === 0) { %>
+          <div class="alert alert-info">No teams registered yet.</div>
+        <% } else { %>
+          <div class="admin-grid">
+            <% teams.forEach(function(team) { %>
+              <div class="admin-card">
+                <div class="admin-title">
+                  <span class="admin-flag">
+                    <img
+                      class="flag-img flag-img-md"
+                      src="<%= flagUrlFor(team.country_code) %>"
+                      alt="<%= team.country_name %> flag"
+                    />
+                  </span>
+                  <div>
+                    <div class="team-name"><%= team.country_name %></div>
+                    <div class="team-meta">Team ID <%= team.id %></div>
+                  </div>
+                </div>
+
+                <form method="post" action="/admin/teams/<%= team.id %>" class="stack">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                  <div class="grid">
+                    <label class="field">
+                      <span>Player 1 name</span>
+                      <input type="text" name="player1_name" value="<%= team.player1_name %>" required />
+                    </label>
+                    <label class="field">
+                      <span>Player 2 name</span>
+                      <input type="text" name="player2_name" value="<%= team.player2_name %>" required />
+                    </label>
+                  </div>
+                  <label class="field">
+                    <span>Country (team name)</span>
+                    <select name="country_code" required>
+                      <% countriesByTeam[team.id].forEach(function(country) { %>
+                        <option value="<%= country.code %>" <%= team.country_code === country.code ? "selected" : "" %>>
+                          <%= country.name %>
+                        </option>
+                      <% }) %>
+                    </select>
+                  </label>
+                  <button type="submit" class="btn">Save changes</button>
+                </form>
+
+                <form method="post" action="/admin/teams/<%= team.id %>/delete" class="admin-delete">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                  <button type="submit" class="btn btn-ghost">Delete team</button>
+                </form>
+              </div>
+            <% }) %>
+          </div>
+        <% } %>
+      </section>
+    </main>
+  </body>
+</html>

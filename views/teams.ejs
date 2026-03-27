@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="icon" href="/beer_logo_transparent.png" type="image/png" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="card">
+        <div class="card-header">
+          <div>
+            <div class="brand-row">
+              <img class="brand-logo" src="/beer_logo_transparent.png" alt="Beer Olympics logo" />
+              <span class="brand-name">Beer Olympics</span>
+            </div>
+            <h1>Registered Teams</h1>
+            <p class="subtitle">All squads and their chosen countries.</p>
+          </div>
+          <form method="post" action="/logout">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <button type="submit" class="btn btn-ghost">Log out</button>
+          </form>
+        </div>
+
+        <% if (teams.length === 0) { %>
+          <div class="alert alert-info">No teams registered yet. Be the first!</div>
+        <% } else { %>
+          <div class="table">
+            <div class="table-header">
+              <span>Country (Team)</span>
+              <span>Player 1</span>
+              <span>Player 2</span>
+            </div>
+            <% teams.forEach(function(team) { %>
+              <div class="table-row">
+                <span class="country">
+                  <img
+                    class="flag-img flag-img-sm"
+                    src="<%= flagUrlFor(team.country_code) %>"
+                    alt="<%= team.country_name %> flag"
+                  />
+                  <%= team.country_name %>
+                </span>
+                <span><%= team.player1_name %></span>
+                <span><%= team.player2_name %></span>
+              </div>
+            <% }) %>
+          </div>
+        <% } %>
+
+        <div class="link-row">
+          <a href="/register">Back to registration</a>
+          <span class="remaining">Countries remaining: <strong><%= remainingCount %></strong></span>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
