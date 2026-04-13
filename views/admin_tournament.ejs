@@ -119,6 +119,20 @@
               <% if (tournament.format === "multi_game") { %>
                 <form method="post" action="/admin/tournament/games/generate">
                   <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                  <label class="field inline-field">
+                    <span>Play-in for odd teams</span>
+                    <select name="play_in_enabled">
+                      <option value="no" selected>No</option>
+                      <option value="yes">Yes (random teams)</option>
+                    </select>
+                  </label>
+                  <label class="field inline-field">
+                    <span>Bracket type</span>
+                    <select name="bracket_type">
+                      <option value="single" selected>Single elimination</option>
+                      <option value="double">Double elimination (auto drop)</option>
+                    </select>
+                  </label>
                   <button type="submit" class="btn btn-ghost">Generate game brackets</button>
                 </form>
               <% } %>
@@ -165,16 +179,34 @@
         </div>
 
         <% if (tournament && tournament.format === "multi_game") { %>
-          <div class="tournament-section">
+          <div class="tournament-section" id="bracket-control">
             <h2>Games</h2>
-            <form method="post" action="/admin/tournament/games" class="stack">
-              <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-              <label class="field">
-                <span>Game name</span>
-                <input type="text" name="game_name" placeholder="Beer Pong" required />
-              </label>
-              <button type="submit" class="btn">Add game</button>
-            </form>
+            <div class="subtabs">
+              <button type="button" class="btn btn-ghost is-active" data-tab="game-single">Single add</button>
+              <button type="button" class="btn btn-ghost" data-tab="game-bulk">Bulk add</button>
+            </div>
+
+            <div class="subtab-panel is-active" id="game-single">
+              <form method="post" action="/admin/tournament/games" class="stack">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                <label class="field">
+                  <span>Game name</span>
+                  <input type="text" name="game_name" placeholder="Beer Pong" required />
+                </label>
+                <button type="submit" class="btn">Add game</button>
+              </form>
+            </div>
+
+            <div class="subtab-panel" id="game-bulk">
+              <form method="post" action="/admin/tournament/games/bulk" class="stack">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                <label class="field">
+                  <span>Game names (comma or new line separated)</span>
+                  <textarea name="game_names" rows="5" placeholder="Beer Pong, Flip Cup\nCornhole" required></textarea>
+                </label>
+                <button type="submit" class="btn">Add games</button>
+              </form>
+            </div>
 
             <% if (games && games.length > 0) { %>
               <div class="table">
@@ -185,9 +217,21 @@
                 </div>
                 <% games.forEach(function(game) { %>
                   <div class="table-row">
-                    <div><strong><%= game.name %></strong></div>
+                    <div>
+                      <form method="post" action="/admin/tournament/games/<%= game.id %>/update" class="game-edit">
+                        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                        <input type="text" name="game_name" value="<%= game.name %>" />
+                        <button type="submit" class="btn btn-ghost">Save</button>
+                      </form>
+                    </div>
                     <div><%= game.id %></div>
-                    <div class="meta">Single elimination bracket</div>
+                    <div class="game-actions">
+                      <span class="meta"><%= settings.bracket_type === "double" ? "Double elimination bracket" : "Single elimination bracket" %></span>
+                      <form method="post" action="/admin/tournament/games/<%= game.id %>/delete">
+                        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                        <button type="submit" class="btn btn-ghost">Delete</button>
+                      </form>
+                    </div>
                   </div>
                 <% }) %>
               </div>
@@ -197,8 +241,221 @@
           </div>
         <% } %>
 
-        <div class="tournament-section">
-          <h2>Manual Match</h2>
+        <% if (tournament && tournament.format === "multi_game") { %>
+          <div class="tournament-section">
+            <h2>Bracket Control</h2>
+            <% if (!brackets || brackets.length === 0) { %>
+              <div class="alert alert-info">Generate brackets to control winners.</div>
+            <% } else { %>
+              <div class="bracket-tabs">
+                <% brackets.forEach(function(bracket) { %>
+                  <a
+                    class="btn btn-ghost <%= activeBracketId === bracket.id ? "is-active" : "" %>"
+                    href="/admin/tournament?game=<%= bracket.id %>"
+                  >
+                    <%= bracket.name %>
+                  </a>
+                <% }) %>
+              </div>
+
+              <% brackets.forEach(function(bracket) { %>
+                <% if (bracket.id === activeBracketId) { %>
+                  <div class="bracket">
+                    <% if ((!bracket.rounds || bracket.rounds.length === 0) && (!bracket.winnersRounds || bracket.winnersRounds.length === 0)) { %>
+                      <div class="alert alert-info">No matches yet.</div>
+                    <% } else { %>
+                      <% if (bracket.isDouble) { %>
+                        <% if (bracket.winnersRounds && bracket.winnersRounds.length > 0) { %>
+                          <div class="bracket-block">
+                            <div class="bracket-block-title">Winners Bracket</div>
+                            <div class="bracket-grid">
+                              <% bracket.winnersRounds.forEach(function(round) { %>
+                                <div class="bracket-round">
+                                <div class="bracket-round-title">Round <%= round.roundNumber %></div>
+                                <% round.matches.forEach(function(match) { %>
+                                  <% const teamAName = match.team_a_name || (match.seed_a ? `Seed ${match.seed_a}` : "TBD"); %>
+                                  <% const teamBName = match.team_b_name || (match.seed_b ? `Seed ${match.seed_b}` : "TBD"); %>
+                                  <div class="bracket-match">
+                                    <form method="post" action="/admin/tournament/match/<%= match.id %>/winner" class="bracket-form">
+                                      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                                      <input type="hidden" name="game_id" value="<%= bracket.id %>" />
+                                      <button
+                                        type="submit"
+                                        name="winner_team_id"
+                                        value="<%= match.team_a_id || "" %>"
+                                        class="bracket-team <%= match.winner_team_id === match.team_a_id ? "is-winner" : "" %>"
+                                        <%= match.team_a_id ? "" : "disabled" %>
+                                      >
+                                        <span class="bracket-seed"><%= match.seed_a ? `#${match.seed_a}` : "" %></span>
+                                        <span><%= teamAName %></span>
+                                      </button>
+                                      <button
+                                        type="submit"
+                                        name="winner_team_id"
+                                        value="<%= match.team_b_id || "" %>"
+                                        class="bracket-team <%= match.winner_team_id === match.team_b_id ? "is-winner" : "" %>"
+                                        <%= match.team_b_id ? "" : "disabled" %>
+                                      >
+                                        <span class="bracket-seed"><%= match.seed_b ? `#${match.seed_b}` : "" %></span>
+                                        <span><%= teamBName %></span>
+                                      </button>
+                                      <% if (match.winner_team_id) { %>
+                                        <button type="submit" name="winner_team_id" value="" class="btn btn-ghost btn-clear">
+                                          Clear
+                                        </button>
+                                      <% } %>
+                                    </form>
+                                  </div>
+                                <% }) %>
+                                </div>
+                              <% }) %>
+                            </div>
+                          </div>
+                        <% } %>
+                        <% if (bracket.losersRounds && bracket.losersRounds.length > 0) { %>
+                          <div class="bracket-block">
+                            <div class="bracket-block-title">Losers Bracket</div>
+                            <div class="bracket-grid">
+                              <% bracket.losersRounds.forEach(function(round) { %>
+                                <div class="bracket-round">
+                                <div class="bracket-round-title">Round <%= round.roundNumber %></div>
+                                <% round.matches.forEach(function(match) { %>
+                                  <% const teamAName = match.team_a_name || "TBD"; %>
+                                  <% const teamBName = match.team_b_name || "TBD"; %>
+                                  <div class="bracket-match">
+                                    <form method="post" action="/admin/tournament/match/<%= match.id %>/winner" class="bracket-form">
+                                      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                                      <input type="hidden" name="game_id" value="<%= bracket.id %>" />
+                                      <button
+                                        type="submit"
+                                        name="winner_team_id"
+                                        value="<%= match.team_a_id || "" %>"
+                                        class="bracket-team <%= match.winner_team_id === match.team_a_id ? "is-winner" : "" %>"
+                                        <%= match.team_a_id ? "" : "disabled" %>
+                                      >
+                                        <span><%= teamAName %></span>
+                                      </button>
+                                      <button
+                                        type="submit"
+                                        name="winner_team_id"
+                                        value="<%= match.team_b_id || "" %>"
+                                        class="bracket-team <%= match.winner_team_id === match.team_b_id ? "is-winner" : "" %>"
+                                        <%= match.team_b_id ? "" : "disabled" %>
+                                      >
+                                        <span><%= teamBName %></span>
+                                      </button>
+                                      <% if (match.winner_team_id) { %>
+                                        <button type="submit" name="winner_team_id" value="" class="btn btn-ghost btn-clear">
+                                          Clear
+                                        </button>
+                                      <% } %>
+                                    </form>
+                                  </div>
+                                <% }) %>
+                                </div>
+                              <% }) %>
+                            </div>
+                          </div>
+                        <% } %>
+                        <% if (bracket.finalMatch) { %>
+                          <div class="bracket-block">
+                            <div class="bracket-block-title">Grand Final</div>
+                            <div class="bracket-grid">
+                              <div class="bracket-round">
+                                <div class="bracket-round-title">Final</div>
+                                <% const finalMatch = bracket.finalMatch; %>
+                                <% const finalAName = finalMatch.team_a_name || "TBD"; %>
+                                <% const finalBName = finalMatch.team_b_name || "TBD"; %>
+                                <div class="bracket-match">
+                                  <form method="post" action="/admin/tournament/match/<%= finalMatch.id %>/winner" class="bracket-form">
+                                    <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                                    <input type="hidden" name="game_id" value="<%= bracket.id %>" />
+                                    <button
+                                      type="submit"
+                                      name="winner_team_id"
+                                      value="<%= finalMatch.team_a_id || "" %>"
+                                      class="bracket-team <%= finalMatch.winner_team_id === finalMatch.team_a_id ? "is-winner" : "" %>"
+                                      <%= finalMatch.team_a_id ? "" : "disabled" %>
+                                    >
+                                      <span><%= finalAName %></span>
+                                    </button>
+                                    <button
+                                      type="submit"
+                                      name="winner_team_id"
+                                      value="<%= finalMatch.team_b_id || "" %>"
+                                      class="bracket-team <%= finalMatch.winner_team_id === finalMatch.team_b_id ? "is-winner" : "" %>"
+                                      <%= finalMatch.team_b_id ? "" : "disabled" %>
+                                    >
+                                      <span><%= finalBName %></span>
+                                    </button>
+                                    <% if (finalMatch.winner_team_id) { %>
+                                      <button type="submit" name="winner_team_id" value="" class="btn btn-ghost btn-clear">
+                                        Clear
+                                      </button>
+                                    <% } %>
+                                  </form>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        <% } %>
+                      <% } else { %>
+                        <div class="bracket-block">
+                          <div class="bracket-block-title">Bracket</div>
+                          <div class="bracket-grid">
+                            <% (bracket.rounds || []).forEach(function(round) { %>
+                              <div class="bracket-round">
+                              <div class="bracket-round-title">Round <%= round.roundNumber %></div>
+                              <% round.matches.forEach(function(match) { %>
+                                <% const teamAName = match.team_a_name || (match.seed_a ? `Seed ${match.seed_a}` : "TBD"); %>
+                                <% const teamBName = match.team_b_name || (match.seed_b ? `Seed ${match.seed_b}` : "TBD"); %>
+                                <div class="bracket-match">
+                                  <form method="post" action="/admin/tournament/match/<%= match.id %>/winner" class="bracket-form">
+                                    <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                                    <input type="hidden" name="game_id" value="<%= bracket.id %>" />
+                                    <button
+                                      type="submit"
+                                      name="winner_team_id"
+                                      value="<%= match.team_a_id || "" %>"
+                                      class="bracket-team <%= match.winner_team_id === match.team_a_id ? "is-winner" : "" %>"
+                                      <%= match.team_a_id ? "" : "disabled" %>
+                                    >
+                                      <span class="bracket-seed"><%= match.seed_a ? `#${match.seed_a}` : "" %></span>
+                                      <span><%= teamAName %></span>
+                                    </button>
+                                    <button
+                                      type="submit"
+                                      name="winner_team_id"
+                                      value="<%= match.team_b_id || "" %>"
+                                      class="bracket-team <%= match.winner_team_id === match.team_b_id ? "is-winner" : "" %>"
+                                      <%= match.team_b_id ? "" : "disabled" %>
+                                    >
+                                      <span class="bracket-seed"><%= match.seed_b ? `#${match.seed_b}` : "" %></span>
+                                      <span><%= teamBName %></span>
+                                    </button>
+                                    <% if (match.winner_team_id) { %>
+                                      <button type="submit" name="winner_team_id" value="" class="btn btn-ghost btn-clear">
+                                        Clear
+                                      </button>
+                                    <% } %>
+                                  </form>
+                                </div>
+                              <% }) %>
+                              </div>
+                            <% }) %>
+                          </div>
+                        </div>
+                      <% } %>
+                    <% } %>
+                  </div>
+                <% } %>
+              <% }) %>
+            <% } %>
+          </div>
+        <% } %>
+
+        <details class="tournament-section">
+          <summary class="section-summary">Manual Match</summary>
           <% if (!tournament) { %>
             <div class="alert alert-info">Create a tournament to add manual matches.</div>
           <% } else { %>
@@ -210,7 +467,13 @@
                   <select name="stage">
                     <% if (tournament.format === "multi_game" && games && games.length > 0) { %>
                       <% games.forEach(function(game) { %>
-                        <option value="<%= game.id %>"><%= game.name %></option>
+                        <% if (settings.bracket_type === "double") { %>
+                          <option value="<%= game.id %>_winners"><%= game.name %> (winners)</option>
+                          <option value="<%= game.id %>_losers"><%= game.name %> (losers)</option>
+                          <option value="<%= game.id %>_final"><%= game.name %> (final)</option>
+                        <% } else { %>
+                          <option value="<%= game.id %>"><%= game.name %></option>
+                        <% } %>
                       <% }) %>
                     <% } else { %>
                       <option value="main">Main</option>
@@ -256,91 +519,96 @@
               <button type="submit" class="btn">Add match</button>
             </form>
           <% } %>
-        </div>
+        </details>
 
-        <div class="tournament-section">
-          <h2>Matches</h2>
+        <details class="tournament-section">
+          <summary class="section-summary">Matches</summary>
           <% const scoreMode = settings.score_mode || "numeric"; %>
           <% if (!tournament || matches.length === 0) { %>
             <div class="alert alert-info">No matches yet.</div>
           <% } else { %>
-            <% let lastStage = null; %>
-            <% let lastGroup = null; %>
-            <% let lastRound = null; %>
             <div class="match-list">
+              <% const stageBuckets = {}; %>
               <% matches.forEach(function(match) { %>
-                <% if (match.stage !== lastStage) { %>
-                  <div class="match-stage">Stage: <%= match.stage.replace(/_/g, " ") %></div>
-                  <% lastStage = match.stage; %>
-                  <% lastGroup = null; %>
-                  <% lastRound = null; %>
+                <% if (!stageBuckets[match.stage]) { %>
+                  <% stageBuckets[match.stage] = {}; %>
                 <% } %>
-                <% if (match.group_name && match.group_name !== lastGroup) { %>
-                  <div class="match-group">Group <%= match.group_name %></div>
-                  <% lastGroup = match.group_name; %>
-                  <% lastRound = null; %>
+                <% const roundKey = String(match.round); %>
+                <% if (!stageBuckets[match.stage][roundKey]) { %>
+                  <% stageBuckets[match.stage][roundKey] = []; %>
                 <% } %>
-                <% if (match.round !== lastRound) { %>
-                  <div class="match-round">Round <%= match.round %></div>
-                  <% lastRound = match.round; %>
-                <% } %>
-                <div class="match-card">
-                  <div class="match-header">
-                    <span>Match <%= match.match_number %></span>
-                    <span class="match-status"><%= match.status %></span>
-                  </div>
-                  <div class="match-body">
-                    <div class="match-team">
-                      <span class="team-name"><%= match.team_a_name || "TBD" %></span>
-                      <span class="team-meta"><%= match.team_a_country || "" %></span>
-                    </div>
-                    <div class="match-team">
-                      <span class="team-name"><%= match.team_b_name || "TBD" %></span>
-                      <span class="team-meta"><%= match.team_b_country || "" %></span>
-                    </div>
-                  </div>
-                  <form method="post" action="/admin/tournament/match/<%= match.id %>" class="match-form">
-                    <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-                    <% if (scoreMode === "winner_only") { %>
-                      <label class="field">
-                        <span>Winner</span>
-                        <select name="winner_team_id">
-                          <option value="">Not set</option>
-                          <% if (match.team_a_id) { %>
-                            <option value="<%= match.team_a_id %>" <%= match.winner_team_id === match.team_a_id ? "selected" : "" %>>
-                              <%= match.team_a_name || "Team A" %>
-                            </option>
-                          <% } %>
-                          <% if (match.team_b_id) { %>
-                            <option value="<%= match.team_b_id %>" <%= match.winner_team_id === match.team_b_id ? "selected" : "" %>>
-                              <%= match.team_b_name || "Team B" %>
-                            </option>
-                          <% } %>
-                        </select>
-                      </label>
-                    <% } else { %>
-                      <div class="grid">
-                        <label class="field">
-                          <span><%= match.team_a_name || "Team A" %> score</span>
-                          <input type="number" name="score_a" value="<%= match.score_a ?? "" %>" min="0" />
-                        </label>
-                        <label class="field">
-                          <span><%= match.team_b_name || "Team B" %> score</span>
-                          <input type="number" name="score_b" value="<%= match.score_b ?? "" %>" min="0" />
-                        </label>
-                      </div>
-                    <% } %>
-                    <button type="submit" class="btn">Save</button>
-                  </form>
-                  <form method="post" action="/admin/tournament/match/<%= match.id %>/delete" class="match-actions">
-                    <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-                    <button type="submit" class="btn btn-ghost">Delete match</button>
-                  </form>
-                </div>
+                <% stageBuckets[match.stage][roundKey].push(match); %>
+              <% }) %>
+
+              <% Object.keys(stageBuckets).forEach(function(stageKey) { %>
+                <details class="match-group-block">
+                  <summary class="match-stage">Stage: <%= stageKey.replace(/_/g, " ") %></summary>
+                  <% const rounds = stageBuckets[stageKey]; %>
+                  <% Object.keys(rounds).sort((a, b) => Number(a) - Number(b)).forEach(function(roundKey) { %>
+                    <details class="match-round-block">
+                      <summary class="match-round">Round <%= roundKey %></summary>
+                      <% rounds[roundKey].forEach(function(match) { %>
+                        <div class="match-card">
+                          <div class="match-header">
+                            <span>Match <%= match.match_number %></span>
+                            <span class="match-status"><%= match.status %></span>
+                          </div>
+                          <div class="match-body">
+                            <div class="match-team">
+                              <span class="team-name"><%= match.team_a_name || "TBD" %></span>
+                              <span class="team-meta"><%= match.team_a_country || "" %></span>
+                            </div>
+                            <div class="match-team">
+                              <span class="team-name"><%= match.team_b_name || "TBD" %></span>
+                              <span class="team-meta"><%= match.team_b_country || "" %></span>
+                            </div>
+                          </div>
+                          <form method="post" action="/admin/tournament/match/<%= match.id %>" class="match-form">
+                            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                            <% if (scoreMode === "winner_only") { %>
+                              <label class="field">
+                                <span>Winner</span>
+                                <select name="winner_team_id">
+                                  <option value="">Not set</option>
+                                  <% if (match.team_a_id) { %>
+                                    <option value="<%= match.team_a_id %>" <%= match.winner_team_id === match.team_a_id ? "selected" : "" %>>
+                                      <%= match.team_a_name || "Team A" %>
+                                    </option>
+                                  <% } %>
+                                  <% if (match.team_b_id) { %>
+                                    <option value="<%= match.team_b_id %>" <%= match.winner_team_id === match.team_b_id ? "selected" : "" %>>
+                                      <%= match.team_b_name || "Team B" %>
+                                    </option>
+                                  <% } %>
+                                </select>
+                              </label>
+                            <% } else { %>
+                              <div class="grid">
+                                <label class="field">
+                                  <span><%= match.team_a_name || "Team A" %> score</span>
+                                  <input type="number" name="score_a" value="<%= match.score_a ?? "" %>" min="0" />
+                                </label>
+                                <label class="field">
+                                  <span><%= match.team_b_name || "Team B" %> score</span>
+                                  <input type="number" name="score_b" value="<%= match.score_b ?? "" %>" min="0" />
+                                </label>
+                              </div>
+                            <% } %>
+                            <button type="submit" class="btn">Save</button>
+                          </form>
+                          <form method="post" action="/admin/tournament/match/<%= match.id %>/delete" class="match-actions">
+                            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                            <button type="submit" class="btn btn-ghost">Delete match</button>
+                          </form>
+                        </div>
+                      <% }) %>
+                    </details>
+                  <% }) %>
+                </details>
               <% }) %>
             </div>
           <% } %>
-        </div>
+        </details>
 
         <% if (tournament && tournament.format === "multi_game") { %>
           <div class="tournament-section">
@@ -402,4 +670,38 @@
       </section>
     </main>
   </body>
+  <script>
+    (function() {
+      const scrollKey = "adminBracketScroll";
+      const forms = document.querySelectorAll(".bracket-form");
+      forms.forEach((form) => {
+        form.addEventListener("submit", () => {
+          sessionStorage.setItem(scrollKey, String(window.scrollY));
+        });
+      });
+
+      window.addEventListener("load", () => {
+        const saved = sessionStorage.getItem(scrollKey);
+        if (saved) {
+          sessionStorage.removeItem(scrollKey);
+          window.scrollTo(0, Number(saved));
+        }
+      });
+
+      const tabs = document.querySelectorAll(".subtabs [data-tab]");
+      const panels = document.querySelectorAll(".subtab-panel");
+      tabs.forEach((tab) => {
+        tab.addEventListener("click", () => {
+          const targetId = tab.getAttribute("data-tab");
+          tabs.forEach((item) => item.classList.remove("is-active"));
+          panels.forEach((panel) => panel.classList.remove("is-active"));
+          tab.classList.add("is-active");
+          const target = document.getElementById(targetId);
+          if (target) {
+            target.classList.add("is-active");
+          }
+        });
+      });
+    })();
+  </script>
 </html>

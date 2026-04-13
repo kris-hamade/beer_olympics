@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="icon" href="/beer_logo_transparent.png" type="image/png" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="card">
+        <div class="card-header">
+          <div>
+            <div class="brand-row">
+              <img class="brand-logo" src="/beer_logo_transparent.png" alt="Beer Olympics logo" />
+              <span class="brand-name">Beer Olympics</span>
+            </div>
+            <h1>Scoreboard</h1>
+            <p class="subtitle">Track bracket wins and total wins across all games.</p>
+          </div>
+          <div class="admin-links">
+            <a class="btn btn-ghost" href="/register">Register</a>
+            <a class="btn btn-ghost" href="/teams">Teams</a>
+            <a class="btn btn-ghost" href="/admin">Admin</a>
+          </div>
+        </div>
+
+        <% if (!tournament) { %>
+          <div class="alert alert-info">No active tournament yet.</div>
+        <% } else if (!games || games.length === 0) { %>
+          <div class="alert alert-info">Add games to view the scoreboards.</div>
+        <% } else { %>
+          <div class="tournament-section">
+            <h2>Game Scoreboards</h2>
+            <% perGameScoreboards.forEach(function(board) { %>
+              <div class="tournament-section">
+                <h3><%= board.name %></h3>
+                <% if (board.champion) { %>
+                  <div class="alert alert-info">Champion: <%= board.champion.team_name %></div>
+                <% } %>
+                <% if (!board.rows || board.rows.length === 0) { %>
+                  <div class="alert alert-info">No wins yet.</div>
+                <% } else { %>
+                  <div class="table">
+                    <div class="table-header">
+                      <div>Team</div>
+                      <div>Country</div>
+                      <div>Wins</div>
+                    </div>
+                    <% board.rows.forEach(function(row) { %>
+                      <div class="table-row">
+                        <div><%= row.team.team_name %></div>
+                        <div><%= row.team.country_name %></div>
+                        <div><%= row.wins %></div>
+                      </div>
+                    <% }) %>
+                  </div>
+                <% } %>
+              </div>
+            <% }) %>
+          </div>
+
+          <div class="tournament-section">
+            <h2>Total Wins</h2>
+            <% if (!totalScoreboard || totalScoreboard.length === 0) { %>
+              <div class="alert alert-info">No wins recorded yet.</div>
+            <% } else { %>
+              <div class="table">
+                <div class="table-header">
+                  <div>Team</div>
+                  <div>Country</div>
+                  <div>Total wins</div>
+                </div>
+                <% totalScoreboard.forEach(function(row) { %>
+                  <div class="table-row">
+                    <div><%= row.team.team_name %></div>
+                    <div><%= row.team.country_name %></div>
+                    <div><%= row.wins %></div>
+                  </div>
+                <% }) %>
+              </div>
+            <% } %>
+          </div>
+        <% } %>
+      </section>
+    </main>
+  </body>
+</html>

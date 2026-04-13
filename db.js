@@ -20,6 +20,7 @@ let updateTournamentSettingsStmt;
 let createMatchStmt;
 let listMatchesByTournamentStmt;
 let deleteMatchesByTournamentStmt;
+let deleteMatchesByStagePrefixStmt;
 let deleteMatchByIdStmt;
 let deleteTournamentByIdStmt;
 let clearNextMatchLinksStmt;
@@ -66,6 +67,8 @@ function initDb() {
       group_name TEXT,
       team_a_id INTEGER,
       team_b_id INTEGER,
+      seed_a INTEGER,
+      seed_b INTEGER,
       score_a INTEGER,
       score_b INTEGER,
       winner_team_id INTEGER,
@@ -78,6 +81,16 @@ function initDb() {
       FOREIGN KEY (tournament_id) REFERENCES tournaments(id)
     )
   `);
+
+  const matchColumns = new Set(
+    db.prepare("PRAGMA table_info(matches)").all().map((row) => row.name)
+  );
+  if (!matchColumns.has("seed_a")) {
+    db.exec("ALTER TABLE matches ADD COLUMN seed_a INTEGER");
+  }
+  if (!matchColumns.has("seed_b")) {
+    db.exec("ALTER TABLE matches ADD COLUMN seed_b INTEGER");
+  }
 
   if (!insertTeamStmt) {
     insertTeamStmt = db.prepare(
@@ -115,10 +128,10 @@ function initDb() {
       "UPDATE tournaments SET settings_json = ? WHERE id = ?"
     );
     createMatchStmt = db.prepare(
-      "INSERT INTO matches (tournament_id, stage, round, match_number, group_name, team_a_id, team_b_id, score_a, score_b, winner_team_id, status, next_match_id, next_match_slot, loser_next_match_id, loser_next_match_slot) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+      "INSERT INTO matches (tournament_id, stage, round, match_number, group_name, team_a_id, team_b_id, seed_a, seed_b, score_a, score_b, winner_team_id, status, next_match_id, next_match_slot, loser_next_match_id, loser_next_match_slot) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     );
     listMatchesByTournamentStmt = db.prepare(
-      "SELECT m.id, m.tournament_id, m.stage, m.round, m.match_number, m.group_name, m.team_a_id, m.team_b_id, m.score_a, m.score_b, m.winner_team_id, m.status, m.next_match_id, m.next_match_slot, m.loser_next_match_id, m.loser_next_match_slot, m.created_at, " +
+      "SELECT m.id, m.tournament_id, m.stage, m.round, m.match_number, m.group_name, m.team_a_id, m.team_b_id, m.seed_a, m.seed_b, m.score_a, m.score_b, m.winner_team_id, m.status, m.next_match_id, m.next_match_slot, m.loser_next_match_id, m.loser_next_match_slot, m.created_at, " +
         "ta.team_name AS team_a_name, ta.country_name AS team_a_country, " +
         "tb.team_name AS team_b_name, tb.country_name AS team_b_country, " +
         "tw.team_name AS winner_name " +
@@ -130,6 +143,9 @@ function initDb() {
       "ORDER BY m.stage ASC, m.group_name ASC, m.round ASC, m.match_number ASC"
     );
     deleteMatchesByTournamentStmt = db.prepare("DELETE FROM matches WHERE tournament_id = ?");
+    deleteMatchesByStagePrefixStmt = db.prepare(
+      "DELETE FROM matches WHERE tournament_id = ? AND stage LIKE ?"
+    );
     deleteMatchByIdStmt = db.prepare("DELETE FROM matches WHERE id = ?");
     deleteTournamentByIdStmt = db.prepare("DELETE FROM tournaments WHERE id = ?");
     clearNextMatchLinksStmt = db.prepare(
@@ -230,6 +246,8 @@ function createMatch(match) {
     match.group_name || null,
     match.team_a_id || null,
     match.team_b_id || null,
+    match.seed_a ?? null,
+    match.seed_b ?? null,
     match.score_a ?? null,
     match.score_b ?? null,
     match.winner_team_id || null,
@@ -247,6 +265,10 @@ function listMatchesByTournament(tournamentId) {
 
 function deleteMatchesByTournament(tournamentId) {
   return deleteMatchesByTournamentStmt.run(tournamentId);
+}
+
+function deleteMatchesByStagePrefix(tournamentId, stagePrefix) {
+  return deleteMatchesByStagePrefixStmt.run(tournamentId, `${stagePrefix}%`);
 }
 
 function deleteMatchById(matchId) {
@@ -307,6 +329,7 @@ module.exports = {
   createMatch,
   listMatchesByTournament,
   deleteMatchesByTournament,
+  deleteMatchesByStagePrefix,
   deleteMatchById,
   deleteTournamentById,
   updateMatchScore,

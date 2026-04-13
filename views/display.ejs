@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="icon" href="/beer_logo_transparent.png" type="image/png" />
+  </head>
+  <body>
+    <main class="page display-page">
+      <section class="card display-card">
+        <div class="display-header">
+          <div class="brand-row">
+            <img class="brand-logo" src="/beer_logo_transparent.png" alt="Beer Olympics logo" />
+            <div>
+              <div class="brand-name">Beer Olympics</div>
+              <div class="display-subtitle">Live brackets and scoreboard</div>
+            </div>
+          </div>
+          <div class="display-meta" id="displayMeta">Updating...</div>
+        </div>
+        <div id="displayContent" class="display-content"></div>
+      </section>
+    </main>
+    <script>
+      (function() {
+        const content = document.getElementById("displayContent");
+        const meta = document.getElementById("displayMeta");
+        let data = null;
+        let slides = [];
+        let slideIndex = 0;
+
+        const buildSlides = () => {
+          slides = [];
+          if (!data || !data.brackets) {
+            return;
+          }
+          data.brackets.forEach((bracket) => {
+            slides.push({ type: "bracket", id: bracket.id });
+          });
+          slides.push({ type: "scoreboard" });
+        };
+
+        const renderTeams = (match) => {
+          const teamA = match.team_a_name || "TBD";
+          const teamB = match.team_b_name || "TBD";
+          return `
+            <div class="display-team ${match.winner_team_id === match.team_a_id ? "is-winner" : ""}">
+              <span>${teamA}</span>
+            </div>
+            <div class="display-team ${match.winner_team_id === match.team_b_id ? "is-winner" : ""}">
+              <span>${teamB}</span>
+            </div>
+          `;
+        };
+
+        const renderRounds = (rounds) => {
+          if (!rounds || rounds.length === 0) {
+            return "<div class=\"alert alert-info\">No matches yet.</div>";
+          }
+          return `
+            <div class="display-bracket-grid">
+              ${rounds.map((round) => `
+                <div class="display-round">
+                  <div class="display-round-title">Round ${round.roundNumber}</div>
+                  ${round.matches.map((match) => `
+                    <div class="display-match">
+                      ${renderTeams(match)}
+                    </div>
+                  `).join("")}
+                </div>
+              `).join("")}
+            </div>
+          `;
+        };
+
+        const renderBracket = (bracket) => {
+          if (!bracket) {
+            content.innerHTML = "<div class=\"alert alert-info\">No brackets available.</div>";
+            return;
+          }
+
+          if (bracket.isDouble) {
+            const winners = renderRounds(bracket.winnersRounds || []);
+            const losers = renderRounds(bracket.losersRounds || []);
+            const finalMatch = bracket.finalMatch
+              ? `
+                <div class="display-block">
+                  <div class="display-block-title">Grand Final</div>
+                  <div class="display-bracket-grid">
+                    <div class="display-round">
+                      <div class="display-round-title">Final</div>
+                      <div class="display-match">
+                        ${renderTeams(bracket.finalMatch)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              `
+              : "";
+
+            content.innerHTML = `
+              <div class="display-title">${bracket.name} - Double Elimination</div>
+              <div class="display-block">
+                <div class="display-block-title">Winners Bracket</div>
+                ${winners}
+              </div>
+              <div class="display-block">
+                <div class="display-block-title">Losers Bracket</div>
+                ${losers}
+              </div>
+              ${finalMatch}
+            `;
+            return;
+          }
+
+          content.innerHTML = `
+            <div class="display-title">${bracket.name} - Bracket</div>
+            ${renderRounds(bracket.rounds || [])}
+          `;
+        };
+
+        const renderScoreboard = () => {
+          if (!data) {
+            content.innerHTML = "<div class=\"alert alert-info\">No scoreboard available.</div>";
+            return;
+          }
+
+          const totalRows = data.totalScoreboard || [];
+          const gameBoards = data.perGameScoreboards || [];
+
+          content.innerHTML = `
+            <div class="display-title">Scoreboard</div>
+            <div class="display-scoreboard">
+              <div class="display-score-section">
+                <div class="display-block-title">Total Wins</div>
+                ${totalRows.length ? `
+                  <div class="display-table">
+                    ${totalRows.map((row) => `
+                      <div class="display-table-row">
+                        <span>${row.team.team_name}</span>
+                        <span>${row.wins}</span>
+                      </div>
+                    `).join("")}
+                  </div>
+                ` : "<div class=\"alert alert-info\">No wins yet.</div>"}
+              </div>
+              <div class="display-score-section">
+                <div class="display-block-title">Game Wins</div>
+                ${gameBoards.map((board) => `
+                  <div class="display-game">
+                    <div class="display-game-title">${board.name}</div>
+                    ${board.rows && board.rows.length ? `
+                      <div class="display-table">
+                        ${board.rows.map((row) => `
+                          <div class="display-table-row">
+                            <span>${row.team.team_name}</span>
+                            <span>${row.wins}</span>
+                          </div>
+                        `).join("")}
+                      </div>
+                    ` : "<div class=\"display-muted\">No wins yet.</div>"}
+                  </div>
+                `).join("")}
+              </div>
+            </div>
+          `;
+        };
+
+        const renderSlide = () => {
+          if (!data || slides.length === 0) {
+            content.innerHTML = "<div class=\"alert alert-info\">Waiting for bracket data...</div>";
+            return;
+          }
+          const slide = slides[slideIndex % slides.length];
+          if (slide.type === "scoreboard") {
+            renderScoreboard();
+            return;
+          }
+          const bracket = data.brackets.find((item) => item.id === slide.id);
+          renderBracket(bracket);
+        };
+
+        const fetchData = async () => {
+          try {
+            const response = await fetch("/display/data", { cache: "no-store" });
+            if (!response.ok) {
+              throw new Error("Failed to load display data");
+            }
+            data = await response.json();
+            meta.textContent = data.tournament
+              ? `${data.tournament.name} · Updated ${new Date(data.updatedAt).toLocaleTimeString()}`
+              : "Waiting for tournament";
+            buildSlides();
+            slideIndex = slideIndex % Math.max(slides.length, 1);
+            renderSlide();
+          } catch (error) {
+            meta.textContent = "Unable to load data";
+          }
+        };
+
+        fetchData();
+        setInterval(fetchData, 5000);
+        setInterval(() => {
+          if (!slides.length) {
+            return;
+          }
+          slideIndex = (slideIndex + 1) % slides.length;
+          renderSlide();
+        }, 12000);
+      })();
+    </script>
+  </body>
+</html>
