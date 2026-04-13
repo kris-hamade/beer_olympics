@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="icon" href="/beer_logo_transparent.png" type="image/png" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="card">
+        <div class="card-header">
+          <div>
+            <div class="brand-row">
+              <img class="brand-logo" src="/beer_logo_transparent.png" alt="Beer Olympics logo" />
+              <span class="brand-name">Beer Olympics</span>
+            </div>
+            <h1>Tournament Control</h1>
+            <p class="subtitle">Create brackets, score matches, and track winners.</p>
+            <div class="admin-links">
+              <a class="btn btn-ghost" href="/admin/teams">Manage teams</a>
+            </div>
+          </div>
+          <form method="post" action="/admin/logout">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <button type="submit" class="btn btn-ghost">Log out</button>
+          </form>
+        </div>
+
+        <% if (flash && flash.type === "error") { %>
+          <div class="alert alert-error"><%= flash.message %></div>
+        <% } %>
+        <% if (flash && flash.type === "success") { %>
+          <div class="alert alert-info"><%= flash.message %></div>
+        <% } %>
+
+        <div class="tournament-section">
+          <h2>Create Tournament</h2>
+          <form method="post" action="/admin/tournament/create" class="stack">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <div class="grid">
+              <label class="field">
+                <span>Name</span>
+                <input type="text" name="name" placeholder="Beer Olympics 2026" required />
+              </label>
+              <label class="field">
+                <span>Format</span>
+                <select name="format" required>
+                  <option value="single_elim">Single elimination</option>
+                  <option value="double_elim">Double elimination (manual)</option>
+                  <option value="round_robin">Round robin</option>
+                  <option value="group_stage">Group stage + bracket</option>
+                  <option value="swiss">Swiss</option>
+                  <option value="multi_game">Multi-game brackets</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Seeding</span>
+                <select name="seeding">
+                  <option value="registration">Registration order</option>
+                  <option value="random">Random shuffle</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Score mode</span>
+                <select name="score_mode">
+                  <option value="numeric">Numeric scores</option>
+                  <option value="winner_only">Winner only</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Group count</span>
+                <input type="number" name="group_count" min="2" max="8" value="2" />
+              </label>
+              <label class="field">
+                <span>Advance per group</span>
+                <input type="number" name="advance_count" min="1" max="4" value="2" />
+              </label>
+              <label class="field">
+                <span>Swiss rounds</span>
+                <input type="number" name="swiss_rounds" min="1" max="10" value="3" />
+              </label>
+            </div>
+            <button type="submit" class="btn">Create tournament</button>
+          </form>
+        </div>
+
+        <div class="tournament-section">
+          <h2>Active Tournament</h2>
+          <% if (!tournament) { %>
+            <div class="alert alert-info">No active tournament yet.</div>
+          <% } else { %>
+            <div class="tournament-meta">
+              <div>
+                <strong><%= tournament.name %></strong>
+                <div class="meta">Format: <%= tournament.format.replace(/_/g, " ") %></div>
+              </div>
+              <div class="meta">Created: <%= new Date(tournament.created_at).toLocaleString() %></div>
+            </div>
+
+            <div class="tournament-actions">
+              <form method="post" action="/admin/tournament/generate">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                <button type="submit" class="btn">Generate matches</button>
+              </form>
+              <form method="post" action="/admin/tournament/next-round">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                <button type="submit" class="btn btn-ghost">Next Swiss round</button>
+              </form>
+              <form method="post" action="/admin/tournament/advance">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                <button type="submit" class="btn btn-ghost">Create bracket from groups</button>
+              </form>
+              <form method="post" action="/admin/tournament/reset">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                <button type="submit" class="btn btn-ghost">Reset matches</button>
+              </form>
+              <% if (tournament.format === "multi_game") { %>
+                <form method="post" action="/admin/tournament/games/generate">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                  <button type="submit" class="btn btn-ghost">Generate game brackets</button>
+                </form>
+              <% } %>
+              <form method="post" action="/admin/tournament/<%= tournament.id %>/delete">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                <button type="submit" class="btn btn-ghost">Delete tournament</button>
+              </form>
+            </div>
+          <% } %>
+        </div>
+
+        <div class="tournament-section">
+          <h2>All Tournaments</h2>
+          <% if (!tournaments || tournaments.length === 0) { %>
+            <div class="alert alert-info">No tournaments created yet.</div>
+          <% } else { %>
+            <div class="table">
+              <div class="table-header">
+                <div>Name</div>
+                <div>Format</div>
+                <div>Actions</div>
+              </div>
+              <% tournaments.forEach(function(item) { %>
+                <div class="table-row">
+                  <div>
+                    <strong><%= item.name %></strong>
+                    <% if (item.is_active) { %>
+                      <div class="meta">Active</div>
+                    <% } %>
+                    <div class="meta">Created: <%= new Date(item.created_at).toLocaleString() %></div>
+                  </div>
+                  <div><%= item.format.replace(/_/g, " ") %></div>
+                  <div class="table-actions">
+                    <div class="meta"><%= item.status %></div>
+                    <form method="post" action="/admin/tournament/<%= item.id %>/delete">
+                      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                      <button type="submit" class="btn btn-ghost">Delete</button>
+                    </form>
+                  </div>
+                </div>
+              <% }) %>
+            </div>
+          <% } %>
+        </div>
+
+        <% if (tournament && tournament.format === "multi_game") { %>
+          <div class="tournament-section">
+            <h2>Games</h2>
+            <form method="post" action="/admin/tournament/games" class="stack">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+              <label class="field">
+                <span>Game name</span>
+                <input type="text" name="game_name" placeholder="Beer Pong" required />
+              </label>
+              <button type="submit" class="btn">Add game</button>
+            </form>
+
+            <% if (games && games.length > 0) { %>
+              <div class="table">
+                <div class="table-header">
+                  <div>Game</div>
+                  <div>Stage</div>
+                  <div>Notes</div>
+                </div>
+                <% games.forEach(function(game) { %>
+                  <div class="table-row">
+                    <div><strong><%= game.name %></strong></div>
+                    <div><%= game.id %></div>
+                    <div class="meta">Single elimination bracket</div>
+                  </div>
+                <% }) %>
+              </div>
+            <% } else { %>
+              <div class="alert alert-info">Add your games to generate brackets.</div>
+            <% } %>
+          </div>
+        <% } %>
+
+        <div class="tournament-section">
+          <h2>Manual Match</h2>
+          <% if (!tournament) { %>
+            <div class="alert alert-info">Create a tournament to add manual matches.</div>
+          <% } else { %>
+            <form method="post" action="/admin/tournament/matches" class="stack">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+              <div class="grid">
+                <label class="field">
+                  <span>Stage</span>
+                  <select name="stage">
+                    <% if (tournament.format === "multi_game" && games && games.length > 0) { %>
+                      <% games.forEach(function(game) { %>
+                        <option value="<%= game.id %>"><%= game.name %></option>
+                      <% }) %>
+                    <% } else { %>
+                      <option value="main">Main</option>
+                      <option value="group">Group</option>
+                      <option value="bracket">Bracket</option>
+                      <option value="swiss">Swiss</option>
+                      <option value="winners">Winners</option>
+                      <option value="losers">Losers</option>
+                    <% } %>
+                  </select>
+                </label>
+                <label class="field">
+                  <span>Round</span>
+                  <input type="number" name="round" min="1" value="1" />
+                </label>
+                <label class="field">
+                  <span>Match #</span>
+                  <input type="number" name="match_number" min="1" value="1" />
+                </label>
+                <label class="field">
+                  <span>Group name (optional)</span>
+                  <input type="text" name="group_name" placeholder="A" />
+                </label>
+                <label class="field">
+                  <span>Team A</span>
+                  <select name="team_a_id">
+                    <option value="">TBD</option>
+                    <% teams.forEach(function(team) { %>
+                      <option value="<%= team.id %>"><%= team.team_name %> (<%= team.country_name %>)</option>
+                    <% }) %>
+                  </select>
+                </label>
+                <label class="field">
+                  <span>Team B</span>
+                  <select name="team_b_id">
+                    <option value="">TBD</option>
+                    <% teams.forEach(function(team) { %>
+                      <option value="<%= team.id %>"><%= team.team_name %> (<%= team.country_name %>)</option>
+                    <% }) %>
+                  </select>
+                </label>
+              </div>
+              <button type="submit" class="btn">Add match</button>
+            </form>
+          <% } %>
+        </div>
+
+        <div class="tournament-section">
+          <h2>Matches</h2>
+          <% const scoreMode = settings.score_mode || "numeric"; %>
+          <% if (!tournament || matches.length === 0) { %>
+            <div class="alert alert-info">No matches yet.</div>
+          <% } else { %>
+            <% let lastStage = null; %>
+            <% let lastGroup = null; %>
+            <% let lastRound = null; %>
+            <div class="match-list">
+              <% matches.forEach(function(match) { %>
+                <% if (match.stage !== lastStage) { %>
+                  <div class="match-stage">Stage: <%= match.stage.replace(/_/g, " ") %></div>
+                  <% lastStage = match.stage; %>
+                  <% lastGroup = null; %>
+                  <% lastRound = null; %>
+                <% } %>
+                <% if (match.group_name && match.group_name !== lastGroup) { %>
+                  <div class="match-group">Group <%= match.group_name %></div>
+                  <% lastGroup = match.group_name; %>
+                  <% lastRound = null; %>
+                <% } %>
+                <% if (match.round !== lastRound) { %>
+                  <div class="match-round">Round <%= match.round %></div>
+                  <% lastRound = match.round; %>
+                <% } %>
+                <div class="match-card">
+                  <div class="match-header">
+                    <span>Match <%= match.match_number %></span>
+                    <span class="match-status"><%= match.status %></span>
+                  </div>
+                  <div class="match-body">
+                    <div class="match-team">
+                      <span class="team-name"><%= match.team_a_name || "TBD" %></span>
+                      <span class="team-meta"><%= match.team_a_country || "" %></span>
+                    </div>
+                    <div class="match-team">
+                      <span class="team-name"><%= match.team_b_name || "TBD" %></span>
+                      <span class="team-meta"><%= match.team_b_country || "" %></span>
+                    </div>
+                  </div>
+                  <form method="post" action="/admin/tournament/match/<%= match.id %>" class="match-form">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                    <% if (scoreMode === "winner_only") { %>
+                      <label class="field">
+                        <span>Winner</span>
+                        <select name="winner_team_id">
+                          <option value="">Not set</option>
+                          <% if (match.team_a_id) { %>
+                            <option value="<%= match.team_a_id %>" <%= match.winner_team_id === match.team_a_id ? "selected" : "" %>>
+                              <%= match.team_a_name || "Team A" %>
+                            </option>
+                          <% } %>
+                          <% if (match.team_b_id) { %>
+                            <option value="<%= match.team_b_id %>" <%= match.winner_team_id === match.team_b_id ? "selected" : "" %>>
+                              <%= match.team_b_name || "Team B" %>
+                            </option>
+                          <% } %>
+                        </select>
+                      </label>
+                    <% } else { %>
+                      <div class="grid">
+                        <label class="field">
+                          <span><%= match.team_a_name || "Team A" %> score</span>
+                          <input type="number" name="score_a" value="<%= match.score_a ?? "" %>" min="0" />
+                        </label>
+                        <label class="field">
+                          <span><%= match.team_b_name || "Team B" %> score</span>
+                          <input type="number" name="score_b" value="<%= match.score_b ?? "" %>" min="0" />
+                        </label>
+                      </div>
+                    <% } %>
+                    <button type="submit" class="btn">Save</button>
+                  </form>
+                  <form method="post" action="/admin/tournament/match/<%= match.id %>/delete" class="match-actions">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                    <button type="submit" class="btn btn-ghost">Delete match</button>
+                  </form>
+                </div>
+              <% }) %>
+            </div>
+          <% } %>
+        </div>
+
+        <% if (tournament && tournament.format === "multi_game") { %>
+          <div class="tournament-section">
+            <h2>Game Scoreboards</h2>
+            <% if (!games || games.length === 0) { %>
+              <div class="alert alert-info">Add games to view scoreboards.</div>
+            <% } else { %>
+              <% perGameScoreboards.forEach(function(board) { %>
+                <div class="tournament-section">
+                  <h3><%= board.name %></h3>
+                  <% if (board.champion) { %>
+                    <div class="alert alert-info">Champion: <%= board.champion.team_name %></div>
+                  <% } %>
+                  <% if (!board.rows || board.rows.length === 0) { %>
+                    <div class="alert alert-info">No wins yet.</div>
+                  <% } else { %>
+                    <div class="table">
+                      <div class="table-header">
+                        <div>Team</div>
+                        <div>Country</div>
+                        <div>Wins</div>
+                      </div>
+                      <% board.rows.forEach(function(row) { %>
+                        <div class="table-row">
+                          <div><%= row.team.team_name %></div>
+                          <div><%= row.team.country_name %></div>
+                          <div><%= row.wins %></div>
+                        </div>
+                      <% }) %>
+                    </div>
+                  <% } %>
+                </div>
+              <% }) %>
+            <% } %>
+          </div>
+
+          <div class="tournament-section">
+            <h2>Total Wins</h2>
+            <% if (!totalScoreboard || totalScoreboard.length === 0) { %>
+              <div class="alert alert-info">No wins recorded yet.</div>
+            <% } else { %>
+              <div class="table">
+                <div class="table-header">
+                  <div>Team</div>
+                  <div>Country</div>
+                  <div>Total wins</div>
+                </div>
+                <% totalScoreboard.forEach(function(row) { %>
+                  <div class="table-row">
+                    <div><%= row.team.team_name %></div>
+                    <div><%= row.team.country_name %></div>
+                    <div><%= row.wins %></div>
+                  </div>
+                <% }) %>
+              </div>
+            <% } %>
+          </div>
+        <% } %>
+      </section>
+    </main>
+  </body>
+</html>

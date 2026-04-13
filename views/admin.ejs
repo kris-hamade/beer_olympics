@@ -18,6 +18,9 @@
             </div>
             <h1>Admin Portal</h1>
             <p class="subtitle">Update players, swap countries, or remove teams.</p>
+            <div class="admin-links">
+              <a class="btn btn-ghost" href="/admin/tournament">Tournament controls</a>
+            </div>
           </div>
           <form method="post" action="/admin/logout">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>" />

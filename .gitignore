@@ -90,3 +90,4 @@ typings/
 # SQLite data
 data/
 *.db
+beer_olympics.sqlite
