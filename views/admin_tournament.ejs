@@ -315,6 +315,35 @@
                                     </form>
                                   </div>
                                 <% }) %>
+                                <% if (round.matches && round.matches.length > 0) { %>
+                                  <% const roundStage = round.matches[0].stage; %>
+                                  <form method="post" action="/admin/tournament/round/rearrange" class="round-edit">
+                                    <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                                    <input type="hidden" name="stage" value="<%= roundStage %>" />
+                                    <input type="hidden" name="round" value="<%= round.roundNumber %>" />
+                                    <input type="hidden" name="game_id" value="<%= bracket.id %>" />
+                                    <div class="round-edit-grid">
+                                      <% round.matches.forEach(function(match) { %>
+                                        <div class="round-edit-row">
+                                          <div class="round-edit-label">Match <%= match.match_number %></div>
+                                          <select name="match_<%= match.id %>_team_a">
+                                            <option value="">TBD</option>
+                                            <% teams.forEach(function(team) { %>
+                                              <option value="<%= team.id %>" <%= match.team_a_id === team.id ? "selected" : "" %>><%= team.team_name %></option>
+                                            <% }) %>
+                                          </select>
+                                          <select name="match_<%= match.id %>_team_b">
+                                            <option value="">TBD</option>
+                                            <% teams.forEach(function(team) { %>
+                                              <option value="<%= team.id %>" <%= match.team_b_id === team.id ? "selected" : "" %>><%= team.team_name %></option>
+                                            <% }) %>
+                                          </select>
+                                        </div>
+                                      <% }) %>
+                                    </div>
+                                    <button type="submit" class="btn btn-ghost">Save round order</button>
+                                  </form>
+                                <% } %>
                                 </div>
                               <% }) %>
                             </div>
@@ -360,6 +389,35 @@
                                     </form>
                                   </div>
                                 <% }) %>
+                                <% if (round.matches && round.matches.length > 0) { %>
+                                  <% const roundStage = round.matches[0].stage; %>
+                                  <form method="post" action="/admin/tournament/round/rearrange" class="round-edit">
+                                    <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                                    <input type="hidden" name="stage" value="<%= roundStage %>" />
+                                    <input type="hidden" name="round" value="<%= round.roundNumber %>" />
+                                    <input type="hidden" name="game_id" value="<%= bracket.id %>" />
+                                    <div class="round-edit-grid">
+                                      <% round.matches.forEach(function(match) { %>
+                                        <div class="round-edit-row">
+                                          <div class="round-edit-label">Match <%= match.match_number %></div>
+                                          <select name="match_<%= match.id %>_team_a">
+                                            <option value="">TBD</option>
+                                            <% teams.forEach(function(team) { %>
+                                              <option value="<%= team.id %>" <%= match.team_a_id === team.id ? "selected" : "" %>><%= team.team_name %></option>
+                                            <% }) %>
+                                          </select>
+                                          <select name="match_<%= match.id %>_team_b">
+                                            <option value="">TBD</option>
+                                            <% teams.forEach(function(team) { %>
+                                              <option value="<%= team.id %>" <%= match.team_b_id === team.id ? "selected" : "" %>><%= team.team_name %></option>
+                                            <% }) %>
+                                          </select>
+                                        </div>
+                                      <% }) %>
+                                    </div>
+                                    <button type="submit" class="btn btn-ghost">Save round order</button>
+                                  </form>
+                                <% } %>
                                 </div>
                               <% }) %>
                             </div>
@@ -449,6 +507,35 @@
                                   </form>
                                 </div>
                               <% }) %>
+                              <% if (round.matches && round.matches.length > 0) { %>
+                                <% const roundStage = round.matches[0].stage; %>
+                                <form method="post" action="/admin/tournament/round/rearrange" class="round-edit">
+                                  <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                                  <input type="hidden" name="stage" value="<%= roundStage %>" />
+                                  <input type="hidden" name="round" value="<%= round.roundNumber %>" />
+                                  <input type="hidden" name="game_id" value="<%= bracket.id %>" />
+                                  <div class="round-edit-grid">
+                                    <% round.matches.forEach(function(match) { %>
+                                      <div class="round-edit-row">
+                                        <div class="round-edit-label">Match <%= match.match_number %></div>
+                                        <select name="match_<%= match.id %>_team_a">
+                                          <option value="">TBD</option>
+                                          <% teams.forEach(function(team) { %>
+                                            <option value="<%= team.id %>" <%= match.team_a_id === team.id ? "selected" : "" %>><%= team.team_name %></option>
+                                          <% }) %>
+                                        </select>
+                                        <select name="match_<%= match.id %>_team_b">
+                                          <option value="">TBD</option>
+                                          <% teams.forEach(function(team) { %>
+                                            <option value="<%= team.id %>" <%= match.team_b_id === team.id ? "selected" : "" %>><%= team.team_name %></option>
+                                          <% }) %>
+                                        </select>
+                                      </div>
+                                    <% }) %>
+                                  </div>
+                                  <button type="submit" class="btn btn-ghost">Save round order</button>
+                                </form>
+                              <% } %>
                               </div>
                             <% }) %>
                           </div>

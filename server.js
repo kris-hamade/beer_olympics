@@ -1264,6 +1264,68 @@ app.get("/admin/tournament", requireAdmin, (req, res) => {
   });
 });
 
+app.post("/admin/tournament/round/rearrange", requireAdmin, requireCsrf, (req, res) => {
+  const tournament = getActiveTournament();
+  if (!tournament) {
+    setFlash(req, "error", "No active tournament to update.");
+    return res.redirect("/admin/tournament");
+  }
+
+  const stage = (req.body.stage || "").trim();
+  const roundNumber = toInt(req.body.round, null);
+  const gameId = (req.body.game_id || "").trim();
+  if (!stage || !roundNumber) {
+    setFlash(req, "error", "Missing round details for rearranging.");
+    return res.redirect(gameId ? `/admin/tournament?game=${encodeURIComponent(gameId)}` : "/admin/tournament");
+  }
+
+  const matches = listMatchesByTournament(tournament.id)
+    .filter((match) => match.stage === stage && match.round === roundNumber);
+
+  if (!matches.length) {
+    setFlash(req, "error", "No matches found for that round.");
+    return res.redirect(gameId ? `/admin/tournament?game=${encodeURIComponent(gameId)}` : "/admin/tournament");
+  }
+
+  const matchById = new Map(matches.map((match) => [match.id, match]));
+  const allMatches = listMatchesByTournament(tournament.id);
+  const allById = new Map(allMatches.map((match) => [match.id, match]));
+
+  matches.forEach((match) => {
+    const teamAId = toInt(req.body[`match_${match.id}_team_a`], null);
+    const teamBId = toInt(req.body[`match_${match.id}_team_b`], null);
+
+    updateMatchTeams(match.id, teamAId, teamBId);
+    updateMatchWinner(match.id, null, "scheduled");
+    updateMatchScore(match.id, null, null, "scheduled");
+
+    if (match.next_match_id && match.next_match_slot) {
+      const nextMatch = allById.get(match.next_match_id);
+      if (nextMatch) {
+        const nextTeamA = match.next_match_slot === "A" ? null : nextMatch.team_a_id;
+        const nextTeamB = match.next_match_slot === "B" ? null : nextMatch.team_b_id;
+        updateMatchTeams(nextMatch.id, nextTeamA, nextTeamB);
+        updateMatchWinner(nextMatch.id, null, "scheduled");
+        updateMatchScore(nextMatch.id, null, null, "scheduled");
+      }
+    }
+
+    if (match.loser_next_match_id && match.loser_next_match_slot) {
+      const loserMatch = allById.get(match.loser_next_match_id);
+      if (loserMatch) {
+        const loserTeamA = match.loser_next_match_slot === "A" ? null : loserMatch.team_a_id;
+        const loserTeamB = match.loser_next_match_slot === "B" ? null : loserMatch.team_b_id;
+        updateMatchTeams(loserMatch.id, loserTeamA, loserTeamB);
+        updateMatchWinner(loserMatch.id, null, "scheduled");
+        updateMatchScore(loserMatch.id, null, null, "scheduled");
+      }
+    }
+  });
+
+  setFlash(req, "success", "Round updated.");
+  return res.redirect(gameId ? `/admin/tournament?game=${encodeURIComponent(gameId)}` : "/admin/tournament");
+});
+
 app.post("/admin/tournament/create", requireAdmin, requireCsrf, (req, res) => {
   const name = (req.body.name || "").trim();
   const format = (req.body.format || "").trim();

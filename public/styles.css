@@ -760,6 +760,30 @@ details.tournament-section[open] > .section-summary {
   color: var(--brown);
 }
 
+.round-edit {
+  margin-top: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.round-edit-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.round-edit-row {
+  display: grid;
+  grid-template-columns: auto 1fr 1fr;
+  gap: 8px;
+  align-items: center;
+}
+
+.round-edit-label {
+  font-weight: 700;
+  color: var(--brown);
+  font-size: 13px;
+}
+
 .bracket-block {
   display: grid;
   gap: 12px;
