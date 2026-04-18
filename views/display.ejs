@@ -25,6 +25,7 @@
             <a class="display-home" href="/">Home</a>
           </div>
         </div>
+        <div class="display-tabs" id="displayTabs" aria-label="Live standings tabs"></div>
         <div id="displayContent" class="display-content"></div>
       </section>
     </main>
@@ -32,6 +33,9 @@
       (function() {
         const content = document.getElementById("displayContent");
         const meta = document.getElementById("displayMeta");
+        const tabs = document.getElementById("displayTabs");
+        const mobileQuery = window.matchMedia("(max-width: 720px)");
+        const isMobile = mobileQuery.matches;
         let data = null;
         let slides = [];
         let slideIndex = 0;
@@ -43,9 +47,41 @@
             return;
           }
           data.brackets.forEach((bracket) => {
-            slides.push({ type: "bracket", id: bracket.id });
+            slides.push({ type: "bracket", id: bracket.id, name: bracket.name });
           });
-          slides.push({ type: "scoreboard" });
+          slides.push({ type: "scoreboard", name: "Scoreboard" });
+        };
+
+        const renderTabs = () => {
+          if (!isMobile || !tabs) {
+            return;
+          }
+          if (!slides.length) {
+            tabs.innerHTML = "";
+            return;
+          }
+          tabs.innerHTML = slides
+            .map((slide, index) => {
+              const isActive = index === slideIndex ? "is-active" : "";
+              const label = slide.name || (slide.type === "scoreboard" ? "Scoreboard" : "Bracket");
+              return `
+                <button type="button" class="display-tab ${isActive}" data-index="${index}">
+                  ${label}
+                </button>
+              `;
+            })
+            .join("");
+
+          tabs.querySelectorAll(".display-tab").forEach((button) => {
+            button.addEventListener("click", () => {
+              const targetIndex = Number(button.dataset.index);
+              if (Number.isFinite(targetIndex)) {
+                slideIndex = targetIndex;
+                renderSlide({ preserveScroll: true });
+                renderTabs();
+              }
+            });
+          });
         };
 
         const renderTeams = (match) => {
@@ -258,6 +294,7 @@
             buildSlides();
             slideIndex = slideIndex % Math.max(slides.length, 1);
             renderSlide({ preserveScroll: true });
+            renderTabs();
           } catch (error) {
             meta.textContent = "Unable to load data";
           }
@@ -265,13 +302,15 @@
 
         fetchData();
         setInterval(fetchData, 5000);
-        setInterval(() => {
-          if (!slides.length) {
-            return;
-          }
-          slideIndex = (slideIndex + 1) % slides.length;
-          renderSlide({ preserveScroll: false });
-        }, 12000);
+        if (!isMobile) {
+          setInterval(() => {
+            if (!slides.length) {
+              return;
+            }
+            slideIndex = (slideIndex + 1) % slides.length;
+            renderSlide({ preserveScroll: false });
+          }, 12000);
+        }
       })();
     </script>
   </body>
