@@ -5,6 +5,7 @@ module.exports = [
   { code: "BR", name: "Brazil", flag: "🇧🇷" },
   { code: "AR", name: "Argentina", flag: "🇦🇷" },
   { code: "GB", name: "Great Britain", flag: "🇬🇧" },
+  { code: "GB-SCT", name: "Scotland", flag: "🏴" },
   { code: "FR", name: "France", flag: "🇫🇷" },
   { code: "DE", name: "Germany", flag: "🇩🇪" },
   { code: "IT", name: "Italy", flag: "🇮🇹" },
