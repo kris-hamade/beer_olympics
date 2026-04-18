@@ -516,6 +516,11 @@ textarea {
   gap: 16px;
 }
 
+.home-panel {
+  display: grid;
+  gap: 16px;
+}
+
 .next-matches {
   border: 1px solid rgba(61, 44, 29, 0.12);
   border-radius: 16px;
@@ -574,6 +579,10 @@ textarea {
   display: grid;
   gap: 24px;
   grid-template-columns: minmax(220px, 1fr) minmax(320px, 2fr);
+}
+
+.register-layout-single {
+  grid-template-columns: 1fr;
 }
 
 .side-panel {
@@ -1004,6 +1013,10 @@ button:disabled {
   cursor: pointer;
   box-shadow: 0 10px 16px rgba(210, 145, 40, 0.3);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn:hover {
@@ -1015,6 +1028,13 @@ button:disabled {
   background: transparent;
   border: 1px solid rgba(61, 44, 29, 0.2);
   box-shadow: none;
+}
+
+.btn-compact {
+  padding: 8px 14px;
+  font-size: 14px;
+  justify-self: start;
+  width: fit-content;
 }
 
 .alert {

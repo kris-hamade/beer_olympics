@@ -886,7 +886,7 @@ function getAvailableCountries() {
 
 app.get("/", (req, res) => {
   if (req.session.isAuthed) {
-    return res.redirect("/register");
+    return res.redirect("/home");
   }
   return res.render("login", {
     title: "Beer Olympics Access",
@@ -903,7 +903,7 @@ app.post("/login", loginLimiter, requireCsrf, (req, res) => {
   }
 
   req.session.isAuthed = true;
-  return res.redirect("/register");
+  return res.redirect("/home");
 });
 
 app.post("/logout", requireAuth, requireCsrf, (req, res) => {
@@ -927,6 +927,17 @@ app.get("/register", requireAuth, (req, res) => {
       country_code: ""
     },
     remainingCount: availableCountries.length
+  });
+});
+
+app.get("/home", requireAuth, (req, res) => {
+  const teams = getTeams();
+  const remainingCount = getAvailableCountries().length;
+
+  res.render("home", {
+    title: "Beer Olympics Home",
+    teams,
+    remainingCount
   });
 });
 

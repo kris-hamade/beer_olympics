@@ -13,7 +13,7 @@
         <div class="card-header">
           <div>
             <div class="brand-row">
-              <a class="brand-link" href="/register">
+              <a class="brand-link" href="/home">
                 <img class="brand-logo" src="/beer_logo_transparent.png" alt="Beer Olympics logo" />
                 <span class="brand-name">Beer Olympics</span>
               </a>
@@ -21,7 +21,8 @@
             <h1>Beer Olympics Team Registration</h1>
             <p class="subtitle">Claim your country and lock in your two-person roster.</p>
             <nav class="page-tabs" aria-label="Main navigation">
-              <a class="page-tab is-active" href="/register" aria-current="page">Home</a>
+              <a class="page-tab" href="/home">Home</a>
+              <a class="page-tab is-active" href="/register" aria-current="page">Register</a>
               <a class="page-tab" href="/teams">Teams</a>
               <a class="page-tab" href="/scoreboard">Scoreboard</a>
               <a class="page-tab" href="https://docs.google.com/document/d/1GRYHY5Xf6VdELjG4wUNFJdes9ynC1oeRwbZ3qtt6ugw/edit?tab=t.0" target="_blank" rel="noopener">Rules</a>
@@ -34,56 +35,8 @@
           </form>
         </div>
 
-        <div class="register-layout">
-          <aside class="side-panel">
-            <h2>Registered Teams</h2>
-            <p class="subtitle">Live roster and country claims.</p>
-            <% if (teams.length === 0) { %>
-              <div class="alert alert-info">No teams yet. Be the first to claim a country.</div>
-            <% } else { %>
-              <div class="team-list">
-                <% teams.forEach(function(team) { %>
-                  <div class="team-item">
-                    <div class="team-flag">
-                      <img
-                        class="flag-img flag-img-md"
-                        src="<%= flagUrlFor(team.country_code) %>"
-                        alt="<%= team.country_name %> flag"
-                        loading="lazy"
-                      />
-                    </div>
-                    <div>
-                      <div class="team-name"><%= team.team_name %></div>
-                      <div class="team-meta">
-                        <span><%= team.player1_name %></span>
-                        <span>·</span>
-                        <span><%= team.player2_name %></span>
-                      </div>
-                      <div class="team-country"><%= team.country_name %></div>
-                    </div>
-                  </div>
-                <% }) %>
-              </div>
-            <% } %>
-          </aside>
-
+        <div class="register-layout register-layout-single">
           <div class="main-panel">
-            <div class="next-matches">
-              <div class="next-matches-header">
-                <h2>Your next matches</h2>
-                <p class="subtitle">Select your team to see the upcoming match in each game.</p>
-              </div>
-              <label class="field">
-                <span>Select your team</span>
-                <select id="teamStatusSelect">
-                  <option value="">Choose a team</option>
-                  <% teams.forEach(function(team) { %>
-                    <option value="<%= team.id %>"><%= team.team_name %></option>
-                  <% }) %>
-                </select>
-              </label>
-              <div id="teamStatusResults" class="next-matches-grid"></div>
-            </div>
 
             <% if (errors.length > 0) { %>
               <div class="alert alert-error">
@@ -164,93 +117,5 @@
       </section>
     </main>
     <script src="/app.js?v=<%= assetVersion %>"></script>
-    <script>
-      (function() {
-        const select = document.getElementById("teamStatusSelect");
-        const results = document.getElementById("teamStatusResults");
-        let timerId = null;
-
-        const renderMessage = (message) => {
-          results.innerHTML = `<div class="alert alert-info">${message}</div>`;
-        };
-
-        const renderGameCard = (game) => {
-          const status = game.status;
-          if (status === "scheduled") {
-            return `
-              <div class="next-match-card">
-                <div class="next-match-title">${game.name}</div>
-                <div class="next-match-meta">${game.label}</div>
-                <div class="next-match-opponent">vs ${game.opponent}</div>
-              </div>
-            `;
-          }
-          if (status === "bye") {
-            return `
-              <div class="next-match-card is-bye">
-                <div class="next-match-title">${game.name}</div>
-                <div class="next-match-meta">${game.label}</div>
-                <div class="next-match-opponent">Bye this round</div>
-              </div>
-            `;
-          }
-          if (status === "champion") {
-            return `
-              <div class="next-match-card is-champion">
-                <div class="next-match-title">${game.name}</div>
-                <div class="next-match-meta">${game.label}</div>
-              </div>
-            `;
-          }
-          return `
-            <div class="next-match-card is-waiting">
-              <div class="next-match-title">${game.name}</div>
-              <div class="next-match-meta">${game.label}</div>
-            </div>
-          `;
-        };
-
-        const fetchStatus = async () => {
-          const teamId = select.value;
-          if (!teamId) {
-            renderMessage("Choose a team to see upcoming matches.");
-            return;
-          }
-
-          try {
-            const response = await fetch(`/team-status?teamId=${teamId}`, { cache: "no-store" });
-            const payload = await response.json();
-            if (payload.error) {
-              renderMessage(payload.error);
-              return;
-            }
-            if (payload.status === "no_tournament") {
-              renderMessage("No active tournament yet.");
-              return;
-            }
-            if (!payload.games || payload.games.length === 0) {
-              renderMessage("No games configured yet.");
-              return;
-            }
-            results.innerHTML = payload.games.map(renderGameCard).join("");
-          } catch (error) {
-            renderMessage("Unable to load match updates.");
-          }
-        };
-
-        const startPolling = () => {
-          if (timerId) {
-            clearInterval(timerId);
-          }
-          fetchStatus();
-          timerId = setInterval(fetchStatus, 8000);
-        };
-
-        if (select) {
-          renderMessage("Choose a team to see upcoming matches.");
-          select.addEventListener("change", startPolling);
-        }
-      })();
-    </script>
   </body>
 </html>

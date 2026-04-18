@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/styles.css?v=<%= assetVersion %>" />
+    <link rel="icon" href="/beer_logo_transparent.png" type="image/png" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="card">
+        <div class="card-header">
+          <div>
+            <div class="brand-row">
+              <a class="brand-link" href="/home">
+                <img class="brand-logo" src="/beer_logo_transparent.png" alt="Beer Olympics logo" />
+                <span class="brand-name">Beer Olympics</span>
+              </a>
+            </div>
+            <h1>Beer Olympics Home</h1>
+            <p class="subtitle">Select your team to see the next matches, or register a new team.</p>
+            <nav class="page-tabs" aria-label="Main navigation">
+              <a class="page-tab is-active" href="/home" aria-current="page">Home</a>
+              <a class="page-tab" href="/register">Register</a>
+              <a class="page-tab" href="/teams">Teams</a>
+              <a class="page-tab" href="/scoreboard">Scoreboard</a>
+              <a class="page-tab" href="https://docs.google.com/document/d/1GRYHY5Xf6VdELjG4wUNFJdes9ynC1oeRwbZ3qtt6ugw/edit?tab=t.0" target="_blank" rel="noopener">Rules</a>
+              <a class="page-tab" href="/live-standings" target="_blank" rel="noopener">Live Standings</a>
+            </nav>
+          </div>
+          <form method="post" action="/logout">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <button type="submit" class="btn btn-ghost">Log out</button>
+          </form>
+        </div>
+
+        <div class="home-panel">
+          <div class="next-matches">
+            <div class="next-matches-header">
+              <h2>Select your team</h2>
+              <p class="subtitle">See the upcoming match for each game.</p>
+            </div>
+            <label class="field">
+              <span>Select your team</span>
+              <select id="teamStatusSelect">
+                <option value="">Choose a team</option>
+                <% teams.forEach(function(team) { %>
+                  <option value="<%= team.id %>"><%= team.team_name %></option>
+                <% }) %>
+              </select>
+            </label>
+            <div id="teamStatusResults" class="next-matches-grid"></div>
+            <a class="btn btn-compact" href="/register">Register Your Team</a>
+          </div>
+
+          <div class="link-row">
+            <span class="remaining">Countries remaining: <strong><%= remainingCount %></strong></span>
+          </div>
+        </div>
+      </section>
+    </main>
+    <script>
+      (function() {
+        const select = document.getElementById("teamStatusSelect");
+        const results = document.getElementById("teamStatusResults");
+        let timerId = null;
+
+        const renderMessage = (message) => {
+          results.innerHTML = `<div class="alert alert-info">${message}</div>`;
+        };
+
+        const renderGameCard = (game) => {
+          const status = game.status;
+          if (status === "scheduled") {
+            return `
+              <div class="next-match-card">
+                <div class="next-match-title">${game.name}</div>
+                <div class="next-match-meta">${game.label}</div>
+                <div class="next-match-opponent">vs ${game.opponent}</div>
+              </div>
+            `;
+          }
+          if (status === "bye") {
+            return `
+              <div class="next-match-card is-bye">
+                <div class="next-match-title">${game.name}</div>
+                <div class="next-match-meta">${game.label}</div>
+                <div class="next-match-opponent">Bye this round</div>
+              </div>
+            `;
+          }
+          if (status === "champion") {
+            return `
+              <div class="next-match-card is-champion">
+                <div class="next-match-title">${game.name}</div>
+                <div class="next-match-meta">${game.label}</div>
+              </div>
+            `;
+          }
+          return `
+            <div class="next-match-card is-waiting">
+              <div class="next-match-title">${game.name}</div>
+              <div class="next-match-meta">${game.label}</div>
+            </div>
+          `;
+        };
+
+        const fetchStatus = async () => {
+          const teamId = select.value;
+          if (!teamId) {
+            renderMessage("Choose a team to see upcoming matches.");
+            return;
+          }
+
+          try {
+            const response = await fetch(`/team-status?teamId=${teamId}`, { cache: "no-store" });
+            const payload = await response.json();
+            if (payload.error) {
+              renderMessage(payload.error);
+              return;
+            }
+            if (payload.status === "no_tournament") {
+              renderMessage("No active tournament yet.");
+              return;
+            }
+            if (!payload.games || payload.games.length === 0) {
+              renderMessage("No games configured yet.");
+              return;
+            }
+            results.innerHTML = payload.games.map(renderGameCard).join("");
+          } catch (error) {
+            renderMessage("Unable to load match updates.");
+          }
+        };
+
+        const startPolling = () => {
+          if (timerId) {
+            clearInterval(timerId);
+          }
+          fetchStatus();
+          timerId = setInterval(fetchStatus, 8000);
+        };
+
+        if (select) {
+          renderMessage("Choose a team to see upcoming matches.");
+          select.addEventListener("change", startPolling);
+        }
+      })();
+    </script>
+  </body>
+</html>
