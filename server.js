@@ -973,12 +973,20 @@ app.get("/scoreboard", (req, res) => {
 });
 
 app.get("/display", (req, res) => {
+  res.redirect("/live-standings");
+});
+
+app.get("/live-standings", (req, res) => {
   res.render("display", {
-    title: "Live Brackets"
+    title: "Live Standings"
   });
 });
 
 app.get("/display/data", (req, res) => {
+  res.redirect("/live-standings/data");
+});
+
+app.get("/live-standings/data", (req, res) => {
   const tournament = getActiveTournament();
   if (!tournament) {
     return res.json({

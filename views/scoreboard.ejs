@@ -13,16 +13,19 @@
         <div class="card-header">
           <div>
             <div class="brand-row">
-              <img class="brand-logo" src="/beer_logo_transparent.png" alt="Beer Olympics logo" />
-              <span class="brand-name">Beer Olympics</span>
+              <a class="brand-link" href="/register">
+                <img class="brand-logo" src="/beer_logo_transparent.png" alt="Beer Olympics logo" />
+                <span class="brand-name">Beer Olympics</span>
+              </a>
             </div>
             <h1>Scoreboard</h1>
             <p class="subtitle">Track bracket wins and total wins across all games.</p>
-          </div>
-          <div class="admin-links">
-            <a class="btn btn-ghost" href="/register">Register</a>
-            <a class="btn btn-ghost" href="/teams">Teams</a>
-            <a class="btn btn-ghost" href="/admin">Admin</a>
+            <nav class="page-tabs" aria-label="Main navigation">
+              <a class="page-tab" href="/register">Home</a>
+              <a class="page-tab" href="/teams">Teams</a>
+              <a class="page-tab is-active" href="/scoreboard" aria-current="page">Scoreboard</a>
+              <a class="page-tab" href="/live-standings" target="_blank" rel="noopener">Live Standings</a>
+            </nav>
           </div>
         </div>
 

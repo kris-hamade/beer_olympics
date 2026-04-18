@@ -12,13 +12,18 @@
       <section class="card display-card">
         <div class="display-header">
           <div class="brand-row">
-            <img class="brand-logo" src="/beer_logo_transparent.png" alt="Beer Olympics logo" />
-            <div>
-              <div class="brand-name">Beer Olympics</div>
-              <div class="display-subtitle">Live brackets and scoreboard</div>
-            </div>
+            <a class="brand-link" href="/">
+              <img class="brand-logo" src="/beer_logo_transparent.png" alt="Beer Olympics logo" />
+              <div>
+                <div class="brand-name">Beer Olympics</div>
+                <div class="display-subtitle">Live standings</div>
+              </div>
+            </a>
           </div>
-          <div class="display-meta" id="displayMeta">Updating...</div>
+          <div class="display-meta-row">
+            <div class="display-meta" id="displayMeta">Updating...</div>
+            <a class="display-home" href="/">Home</a>
+          </div>
         </div>
         <div id="displayContent" class="display-content"></div>
       </section>
@@ -30,6 +35,7 @@
         let data = null;
         let slides = [];
         let slideIndex = 0;
+        const gridScrollBySlide = new Map();
 
         const buildSlides = () => {
           slides = [];
@@ -55,12 +61,12 @@
           `;
         };
 
-        const renderRounds = (rounds) => {
+        const renderRounds = (rounds, key) => {
           if (!rounds || rounds.length === 0) {
             return "<div class=\"alert alert-info\">No matches yet.</div>";
           }
           return `
-            <div class="display-bracket-grid">
+            <div class="display-bracket-grid" data-grid-key="${key}">
               ${rounds.map((round) => `
                 <div class="display-round">
                   <div class="display-round-title">Round ${round.roundNumber}</div>
@@ -82,13 +88,13 @@
           }
 
           if (bracket.isDouble) {
-            const winners = renderRounds(bracket.winnersRounds || []);
-            const losers = renderRounds(bracket.losersRounds || []);
+            const winners = renderRounds(bracket.winnersRounds || [], "winners");
+            const losers = renderRounds(bracket.losersRounds || [], "losers");
             const finalMatch = bracket.finalMatch
               ? `
                 <div class="display-block">
                   <div class="display-block-title">Grand Final</div>
-                  <div class="display-bracket-grid">
+                  <div class="display-bracket-grid" data-grid-key="final">
                     <div class="display-round">
                       <div class="display-round-title">Final</div>
                       <div class="display-match">
@@ -117,7 +123,7 @@
 
           content.innerHTML = `
             <div class="display-title">${bracket.name} - Bracket</div>
-            ${renderRounds(bracket.rounds || [])}
+            ${renderRounds(bracket.rounds || [], "single")}
           `;
         };
 
@@ -168,23 +174,80 @@
           `;
         };
 
-        const renderSlide = () => {
+        const restoreScroll = (y) => {
+          requestAnimationFrame(() => {
+            window.scrollTo({ top: y, left: 0, behavior: "auto" });
+          });
+        };
+
+        const storeGridScroll = (slideKey) => {
+          const grids = Array.from(content.querySelectorAll(".display-bracket-grid"));
+          if (!grids.length) {
+            return;
+          }
+          const scrollState = {};
+          grids.forEach((grid, index) => {
+            const key = grid.dataset.gridKey || `grid-${index}`;
+            scrollState[key] = grid.scrollLeft;
+          });
+          gridScrollBySlide.set(slideKey, scrollState);
+        };
+
+        const restoreGridScroll = (slideKey) => {
+          const grids = Array.from(content.querySelectorAll(".display-bracket-grid"));
+          if (!grids.length) {
+            return;
+          }
+          const scrollState = gridScrollBySlide.get(slideKey);
+          if (!scrollState || typeof scrollState !== "object") {
+            return;
+          }
+          requestAnimationFrame(() => {
+            grids.forEach((grid, index) => {
+              const key = grid.dataset.gridKey || `grid-${index}`;
+              const scrollLeft = scrollState[key];
+              if (typeof scrollLeft === "number") {
+                grid.scrollLeft = scrollLeft;
+              }
+            });
+          });
+        };
+
+        const renderSlide = (options = {}) => {
+          const preserveScroll = options.preserveScroll === true;
+          const scrollY = preserveScroll ? window.scrollY : 0;
+          const currentSlide = slides.length ? slides[slideIndex % slides.length] : null;
+          const currentKey = currentSlide ? `${currentSlide.type}:${currentSlide.id || "scoreboard"}` : "";
+          if (preserveScroll && currentKey) {
+            storeGridScroll(currentKey);
+          }
           if (!data || slides.length === 0) {
             content.innerHTML = "<div class=\"alert alert-info\">Waiting for bracket data...</div>";
+            if (preserveScroll) {
+              restoreScroll(scrollY);
+            }
             return;
           }
           const slide = slides[slideIndex % slides.length];
+          const slideKey = `${slide.type}:${slide.id || "scoreboard"}`;
           if (slide.type === "scoreboard") {
             renderScoreboard();
+            if (preserveScroll) {
+              restoreScroll(scrollY);
+            }
             return;
           }
           const bracket = data.brackets.find((item) => item.id === slide.id);
           renderBracket(bracket);
+          if (preserveScroll) {
+            restoreScroll(scrollY);
+            restoreGridScroll(slideKey);
+          }
         };
 
         const fetchData = async () => {
           try {
-            const response = await fetch("/display/data", { cache: "no-store" });
+            const response = await fetch("/live-standings/data", { cache: "no-store" });
             if (!response.ok) {
               throw new Error("Failed to load display data");
             }
@@ -194,7 +257,7 @@
               : "Waiting for tournament";
             buildSlides();
             slideIndex = slideIndex % Math.max(slides.length, 1);
-            renderSlide();
+            renderSlide({ preserveScroll: true });
           } catch (error) {
             meta.textContent = "Unable to load data";
           }
@@ -207,7 +270,7 @@
             return;
           }
           slideIndex = (slideIndex + 1) % slides.length;
-          renderSlide();
+          renderSlide({ preserveScroll: false });
         }, 12000);
       })();
     </script>

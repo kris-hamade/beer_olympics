@@ -11,11 +11,18 @@
     <main class="page">
       <section class="card">
         <div class="brand-row">
-          <img class="brand-logo" src="/beer_logo_transparent.png" alt="Beer Olympics logo" />
-          <span class="brand-name">Beer Olympics</span>
+          <a class="brand-link" href="/">
+            <img class="brand-logo" src="/beer_logo_transparent.png" alt="Beer Olympics logo" />
+            <span class="brand-name">Beer Olympics</span>
+          </a>
         </div>
         <h1>Admin Portal</h1>
         <p class="subtitle">Enter the admin password to manage teams.</p>
+
+        <nav class="page-tabs" aria-label="Main navigation">
+          <a class="page-tab" href="/">Home</a>
+          <a class="page-tab" href="/live-standings" target="_blank" rel="noopener">Live Standings</a>
+        </nav>
 
         <% if (flash && flash.type === "error") { %>
           <div class="alert alert-error"><%= flash.message %></div>

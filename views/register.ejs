@@ -13,11 +13,19 @@
         <div class="card-header">
           <div>
             <div class="brand-row">
-              <img class="brand-logo" src="/beer_logo_transparent.png" alt="Beer Olympics logo" />
-              <span class="brand-name">Beer Olympics</span>
+              <a class="brand-link" href="/register">
+                <img class="brand-logo" src="/beer_logo_transparent.png" alt="Beer Olympics logo" />
+                <span class="brand-name">Beer Olympics</span>
+              </a>
             </div>
             <h1>Beer Olympics Team Registration</h1>
             <p class="subtitle">Claim your country and lock in your two-person roster.</p>
+            <nav class="page-tabs" aria-label="Main navigation">
+              <a class="page-tab is-active" href="/register" aria-current="page">Home</a>
+              <a class="page-tab" href="/teams">Teams</a>
+              <a class="page-tab" href="/scoreboard">Scoreboard</a>
+              <a class="page-tab" href="/live-standings" target="_blank" rel="noopener">Live Standings</a>
+            </nav>
           </div>
           <form method="post" action="/logout">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>" />

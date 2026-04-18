@@ -13,11 +13,19 @@
         <div class="card-header">
           <div>
             <div class="brand-row">
-              <img class="brand-logo" src="/beer_logo_transparent.png" alt="Beer Olympics logo" />
-              <span class="brand-name">Beer Olympics</span>
+              <a class="brand-link" href="/admin/teams">
+                <img class="brand-logo" src="/beer_logo_transparent.png" alt="Beer Olympics logo" />
+                <span class="brand-name">Beer Olympics</span>
+              </a>
             </div>
             <h1>Admin Portal</h1>
             <p class="subtitle">Update players, swap countries, or remove teams.</p>
+            <nav class="page-tabs" aria-label="Main navigation">
+              <a class="page-tab" href="/register">Home</a>
+              <a class="page-tab is-active" href="/admin/teams" aria-current="page">Admin</a>
+              <a class="page-tab" href="/admin/tournament">Tournament</a>
+              <a class="page-tab" href="/live-standings" target="_blank" rel="noopener">Live Standings</a>
+            </nav>
             <div class="admin-links">
               <a class="btn btn-ghost" href="/admin/tournament">Tournament controls</a>
             </div>

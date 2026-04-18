@@ -30,6 +30,7 @@ body {
 
 .display-page {
   align-items: flex-start;
+  padding: clamp(24px, 4vw, 60px) clamp(16px, 4vw, 48px);
 }
 
 .card {
@@ -44,7 +45,9 @@ body {
 }
 
 .display-card {
-  width: min(1400px, 96vw);
+  width: min(1800px, 96vw);
+  padding: clamp(18px, 3vw, 36px);
+  margin-bottom: clamp(16px, 3vw, 36px);
 }
 
 .display-header {
@@ -59,11 +62,37 @@ body {
 .display-subtitle {
   color: #6f5a44;
   font-weight: 600;
+  font-size: clamp(14px, 1.5vw, 18px);
 }
 
 .display-meta {
   font-weight: 700;
   color: var(--brown);
+  font-size: clamp(14px, 1.4vw, 18px);
+}
+
+.display-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.display-home {
+  text-decoration: none;
+  color: var(--brown);
+  font-weight: 700;
+  font-size: clamp(13px, 1.2vw, 16px);
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(61, 44, 29, 0.15);
+  background: transparent;
+  opacity: 0.75;
+}
+
+.display-home:hover {
+  opacity: 1;
 }
 
 .display-content {
@@ -73,15 +102,15 @@ body {
 
 .display-title {
   font-family: "Georgia", "Times New Roman", serif;
-  font-size: 26px;
+  font-size: clamp(20px, 2.4vw, 34px);
   color: var(--brown);
 }
 
 .display-bracket-grid {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: minmax(220px, 1fr);
-  gap: 20px;
+  grid-auto-columns: minmax(200px, 1fr);
+  gap: clamp(12px, 2vw, 20px);
   align-items: start;
   overflow-x: auto;
   padding-bottom: 8px;
@@ -99,11 +128,12 @@ body {
 .display-round-title {
   font-weight: 700;
   color: var(--brown);
+  font-size: clamp(14px, 1.6vw, 20px);
 }
 
 .display-match {
   display: grid;
-  gap: 8px;
+  gap: clamp(6px, 1.2vw, 10px);
   padding: 10px;
   border-radius: 14px;
   border: 1px solid rgba(61, 44, 29, 0.12);
@@ -115,6 +145,8 @@ body {
   justify-content: space-between;
   font-weight: 700;
   color: var(--brown);
+  font-size: clamp(14px, 1.5vw, 20px);
+  gap: 10px;
 }
 
 .display-team.is-winner {
@@ -132,7 +164,7 @@ body {
 .display-block-title {
   font-weight: 700;
   color: var(--brown);
-  font-size: 18px;
+  font-size: clamp(16px, 1.8vw, 22px);
 }
 
 .display-scoreboard {
@@ -154,6 +186,7 @@ body {
   padding: 8px 12px;
   border: 1px solid rgba(61, 44, 29, 0.1);
   font-weight: 700;
+  font-size: clamp(14px, 1.4vw, 18px);
 }
 
 .display-game {
@@ -164,11 +197,57 @@ body {
   font-weight: 700;
   color: var(--brown);
   margin-bottom: 6px;
+  font-size: clamp(14px, 1.6vw, 20px);
 }
 
 .display-muted {
   color: #6f5a44;
   font-size: 14px;
+}
+
+@media (max-width: 720px) {
+  .display-header {
+    align-items: flex-start;
+  }
+
+  .display-meta {
+    width: 100%;
+  }
+
+  .display-bracket-grid {
+    grid-auto-columns: minmax(180px, 1fr);
+  }
+
+  .display-scoreboard {
+    grid-template-columns: 1fr;
+  }
+
+  .display-card {
+    overflow: visible;
+  }
+
+  .display-title {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--cream);
+    padding: 10px 0;
+    box-shadow: 0 8px 18px rgba(61, 44, 29, 0.08);
+  }
+}
+
+@media (min-width: 1600px) {
+  .display-card {
+    width: min(2200px, 92vw);
+  }
+
+  .display-bracket-grid {
+    grid-auto-columns: minmax(260px, 1fr);
+  }
+
+  .display-scoreboard {
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  }
 }
 
 .card::after {
@@ -272,6 +351,43 @@ textarea {
   font-size: 20px;
   color: var(--brown);
   letter-spacing: 0.3px;
+}
+
+.brand-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.page-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.page-tab {
+  text-decoration: none;
+  color: var(--brown);
+  font-weight: 700;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(61, 44, 29, 0.18);
+  background: #fffaf0;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.page-tab:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 18px rgba(61, 44, 29, 0.12);
+}
+
+.page-tab.is-active {
+  background: var(--amber);
+  border-color: transparent;
+  box-shadow: 0 10px 18px rgba(210, 145, 40, 0.2);
 }
 
 .stack {

@@ -16,6 +16,11 @@
         <h1>Beer Olympics</h1>
         <p class="subtitle">Private team signup portal. Enter the access password to continue.</p>
 
+        <nav class="page-tabs" aria-label="Quick links">
+          <a class="page-tab" href="/admin">Admin</a>
+          <a class="page-tab" href="/live-standings" target="_blank" rel="noopener">Live Standings</a>
+        </nav>
+
         <% if (flash && flash.type === "error") { %>
           <div class="alert alert-error"><%= flash.message %></div>
         <% } %>
