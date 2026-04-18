@@ -395,6 +395,60 @@ textarea {
   gap: 16px;
 }
 
+.next-matches {
+  border: 1px solid rgba(61, 44, 29, 0.12);
+  border-radius: 16px;
+  padding: 18px 20px;
+  background: #fffdf7;
+  margin-bottom: 20px;
+  display: grid;
+  gap: 16px;
+}
+
+.next-matches-header h2 {
+  margin-bottom: 4px;
+}
+
+.next-matches-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.next-match-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 12px 14px;
+  border: 1px solid rgba(61, 44, 29, 0.12);
+  display: grid;
+  gap: 6px;
+}
+
+.next-match-title {
+  font-weight: 700;
+  color: var(--brown);
+}
+
+.next-match-meta {
+  color: #6f5a44;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.next-match-opponent {
+  font-weight: 700;
+  color: #4c3b2b;
+}
+
+.next-match-card.is-bye {
+  background: #fff6e5;
+}
+
+.next-match-card.is-champion {
+  background: #f9edcf;
+  border-color: rgba(210, 145, 40, 0.35);
+}
+
 .register-layout {
   display: grid;
   gap: 24px;

@@ -67,6 +67,23 @@
           </aside>
 
           <div class="main-panel">
+            <div class="next-matches">
+              <div class="next-matches-header">
+                <h2>Your next matches</h2>
+                <p class="subtitle">Select your team to see the upcoming match in each game.</p>
+              </div>
+              <label class="field">
+                <span>Select your team</span>
+                <select id="teamStatusSelect">
+                  <option value="">Choose a team</option>
+                  <% teams.forEach(function(team) { %>
+                    <option value="<%= team.id %>"><%= team.team_name %></option>
+                  <% }) %>
+                </select>
+              </label>
+              <div id="teamStatusResults" class="next-matches-grid"></div>
+            </div>
+
             <% if (errors.length > 0) { %>
               <div class="alert alert-error">
                 <ul>
@@ -145,5 +162,93 @@
       </section>
     </main>
     <script src="/app.js"></script>
+    <script>
+      (function() {
+        const select = document.getElementById("teamStatusSelect");
+        const results = document.getElementById("teamStatusResults");
+        let timerId = null;
+
+        const renderMessage = (message) => {
+          results.innerHTML = `<div class="alert alert-info">${message}</div>`;
+        };
+
+        const renderGameCard = (game) => {
+          const status = game.status;
+          if (status === "scheduled") {
+            return `
+              <div class="next-match-card">
+                <div class="next-match-title">${game.name}</div>
+                <div class="next-match-meta">${game.label}</div>
+                <div class="next-match-opponent">vs ${game.opponent}</div>
+              </div>
+            `;
+          }
+          if (status === "bye") {
+            return `
+              <div class="next-match-card is-bye">
+                <div class="next-match-title">${game.name}</div>
+                <div class="next-match-meta">${game.label}</div>
+                <div class="next-match-opponent">Bye this round</div>
+              </div>
+            `;
+          }
+          if (status === "champion") {
+            return `
+              <div class="next-match-card is-champion">
+                <div class="next-match-title">${game.name}</div>
+                <div class="next-match-meta">${game.label}</div>
+              </div>
+            `;
+          }
+          return `
+            <div class="next-match-card is-waiting">
+              <div class="next-match-title">${game.name}</div>
+              <div class="next-match-meta">${game.label}</div>
+            </div>
+          `;
+        };
+
+        const fetchStatus = async () => {
+          const teamId = select.value;
+          if (!teamId) {
+            renderMessage("Choose a team to see upcoming matches.");
+            return;
+          }
+
+          try {
+            const response = await fetch(`/team-status?teamId=${teamId}`, { cache: "no-store" });
+            const payload = await response.json();
+            if (payload.error) {
+              renderMessage(payload.error);
+              return;
+            }
+            if (payload.status === "no_tournament") {
+              renderMessage("No active tournament yet.");
+              return;
+            }
+            if (!payload.games || payload.games.length === 0) {
+              renderMessage("No games configured yet.");
+              return;
+            }
+            results.innerHTML = payload.games.map(renderGameCard).join("");
+          } catch (error) {
+            renderMessage("Unable to load match updates.");
+          }
+        };
+
+        const startPolling = () => {
+          if (timerId) {
+            clearInterval(timerId);
+          }
+          fetchStatus();
+          timerId = setInterval(fetchStatus, 8000);
+        };
+
+        if (select) {
+          renderMessage("Choose a team to see upcoming matches.");
+          select.addEventListener("change", startPolling);
+        }
+      })();
+    </script>
   </body>
 </html>

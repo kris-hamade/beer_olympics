@@ -760,6 +760,69 @@ function buildBrackets(matches, games) {
   });
 }
 
+function buildStageLabel(stage, gameId, round) {
+  if (stage === `${gameId}_final`) {
+    return "Grand Final";
+  }
+  if (stage === `${gameId}_winners`) {
+    return `Winners Round ${round}`;
+  }
+  if (stage === `${gameId}_losers`) {
+    return `Losers Round ${round}`;
+  }
+  if (stage === gameId) {
+    return `Round ${round}`;
+  }
+  return `Round ${round}`;
+}
+
+function getNextMatchStatus(matches, game, teamId) {
+  const gameMatches = matches.filter(
+    (match) => match.stage && match.stage.startsWith(game.id)
+  );
+  const isTeamMatch = (match) => match.team_a_id === teamId || match.team_b_id === teamId;
+  const byRound = (a, b) => (a.round - b.round) || (a.match_number - b.match_number);
+
+  const scheduled = gameMatches
+    .filter((match) => isTeamMatch(match) && match.status !== "completed")
+    .sort(byRound)[0];
+
+  if (scheduled) {
+    const opponent = scheduled.team_a_id === teamId
+      ? scheduled.team_b_name
+      : scheduled.team_a_name;
+    return {
+      status: "scheduled",
+      label: buildStageLabel(scheduled.stage, game.id, scheduled.round),
+      opponent: opponent || "TBD"
+    };
+  }
+
+  const byeMatch = gameMatches
+    .filter((match) => isTeamMatch(match))
+    .filter((match) => (!match.team_a_id || !match.team_b_id) && match.winner_team_id === teamId)
+    .sort(byRound)
+    .pop();
+
+  if (byeMatch) {
+    return {
+      status: "bye",
+      label: buildStageLabel(byeMatch.stage, game.id, byeMatch.round)
+    };
+  }
+
+  const finalMatch = gameMatches.find((match) => match.stage === `${game.id}_final`);
+  if (finalMatch && finalMatch.winner_team_id === teamId) {
+    return { status: "champion", label: "Champion" };
+  }
+
+  if (gameMatches.length === 0) {
+    return { status: "not_started", label: "Not started" };
+  }
+
+  return { status: "waiting", label: "Waiting for next round" };
+}
+
 function setWinnerAndAdvance(tournamentId, matchId, winnerTeamId) {
   if (!winnerTeamId) {
     return;
@@ -848,6 +911,45 @@ app.get("/register", requireAuth, (req, res) => {
       country_code: ""
     },
     remainingCount: availableCountries.length
+  });
+});
+
+app.get("/team-status", requireAuth, (req, res) => {
+  const teamId = Number(req.query.teamId);
+  if (!Number.isFinite(teamId)) {
+    return res.json({ error: "Team not found." });
+  }
+
+  const team = getTeamById(teamId);
+  if (!team) {
+    return res.json({ error: "Team not found." });
+  }
+
+  const tournament = getActiveTournament();
+  if (!tournament) {
+    return res.json({
+      teamId,
+      teamName: team.team_name,
+      status: "no_tournament",
+      games: []
+    });
+  }
+
+  const settings = parseSettings(tournament.settings_json);
+  const games = Array.isArray(settings.games) ? settings.games : [];
+  const matches = listMatchesByTournament(tournament.id);
+
+  const gameStatuses = games.map((game) => ({
+    id: game.id,
+    name: game.name,
+    ...getNextMatchStatus(matches, game, teamId)
+  }));
+
+  return res.json({
+    teamId,
+    teamName: team.team_name,
+    updatedAt: new Date().toISOString(),
+    games: gameStatuses
   });
 });
 
