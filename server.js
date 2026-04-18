@@ -4,6 +4,7 @@ const session = require("express-session");
 const rateLimit = require("express-rate-limit");
 const crypto = require("crypto");
 const dotenv = require("dotenv");
+const packageInfo = require("./package.json");
 dotenv.config();
 
 const {
@@ -38,6 +39,7 @@ const PORT = process.env.PORT || 3000;
 const APP_PASSWORD = process.env.APP_PASSWORD || "beer";
 const SESSION_SECRET = process.env.SESSION_SECRET || "dev-session-secret";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "beeradmin";
+const ASSET_VERSION = process.env.ASSET_VERSION || packageInfo.version;
 
 initDb();
 
@@ -45,7 +47,13 @@ app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 
 app.use(express.urlencoded({ extended: false }));
-app.use(express.static(path.join(__dirname, "public")));
+app.use(
+  express.static(path.join(__dirname, "public"), {
+    setHeaders: (res) => {
+      res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+    }
+  })
+);
 
 app.use(
   session({
@@ -76,7 +84,15 @@ app.use((req, res, next) => {
   res.locals.isAuthed = Boolean(req.session.isAuthed);
   res.locals.flash = req.session.flash || null;
   res.locals.flagUrlFor = (code) => `https://flagcdn.com/32x24/${String(code).toLowerCase()}.png`;
+  res.locals.assetVersion = ASSET_VERSION;
   req.session.flash = null;
+  next();
+});
+
+app.use((req, res, next) => {
+  if (req.method === "GET" && req.accepts("html")) {
+    res.setHeader("Cache-Control", "no-store");
+  }
   next();
 });
 
