@@ -35,9 +35,11 @@ jobs:
         run: docker build . --file Dockerfile --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
 
       - name: Save Docker image
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: docker save ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest > image.tar
 
       - name: Upload Docker image
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v4
         with:
           name: docker-image
@@ -46,6 +48,7 @@ jobs:
 
   publish:
     needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     environment: Production
     runs-on: ubuntu-latest
 
